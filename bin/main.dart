@@ -251,7 +251,15 @@ Future<HttpServer> createServer() async {
               'new-hover $uuid ${hover.x} ${hover.y} ${hover.id} ${hover.rot}',
             );
           },
-        ); // Send grid to client
+        );
+
+        cursors.forEach(
+          (id, cursor) {
+            ws.sink.add('set-cursor $id ${cursor.x} ${cursor.y}');
+          },
+        );
+
+        // Send grid to client
       }
     },
   );
