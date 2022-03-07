@@ -142,16 +142,27 @@ Future<HttpServer> createServer() async {
 
             switch (args.first) {
               case "place":
-                grid[int.parse(args[1])][int.parse(args[2])].id = args[3];
-                grid[int.parse(args[1])][int.parse(args[2])].rot =
-                    int.parse(args[4]);
+                var x = int.parse(args[1]);
+                var y = int.parse(args[2]);
+                if (wrap) {
+                  x = (x + grid.length) % grid.length;
+                  y = (y + grid.first.length) % grid.first.length;
+                }
+                grid[x][y].id = args[3];
+                grid[x][y].rot = int.parse(args[4]);
                 for (var ws in webSockets) {
                   ws.sink.add(data);
                 }
                 gridCache = null;
                 break;
               case "bg":
-                grid[int.parse(args[1])][int.parse(args[2])].bg = args[3];
+                var x = int.parse(args[1]);
+                var y = int.parse(args[2]);
+                if (wrap) {
+                  x = (x + grid.length) % grid.length;
+                  y = (y + grid.first.length) % grid.first.length;
+                }
+                grid[x][y].bg = args[3];
                 for (var ws in webSockets) {
                   ws.sink.add(data);
                 }
@@ -210,6 +221,11 @@ Future<HttpServer> createServer() async {
                   cursors[args[1]]!.x = double.parse(args[2]);
                   cursors[args[1]]!.y = double.parse(args[3]);
                 }
+                for (var ws in webSockets) {
+                  ws.sink.add(data);
+                }
+                break;
+              default:
                 for (var ws in webSockets) {
                   ws.sink.add(data);
                 }
