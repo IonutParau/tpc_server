@@ -39,6 +39,12 @@ var type = ServerType.sandbox;
 late ArgResults config;
 
 void main(List<String> arguments) async {
+  final vf = File('versions.txt');
+  if (vf.existsSync()) {
+    print('Reading allowed versions...');
+    versions = vf.readAsLinesSync();
+  }
+
   final args = ArgParser();
   args.addOption('ip', defaultsTo: 'local');
   args.addOption('port', defaultsTo: '8080');
@@ -87,6 +93,8 @@ void main(List<String> arguments) async {
   }
 }
 
+var versions = <String>[];
+
 final List<WebSocketChannel> webSockets = [];
 
 String? gridCache;
@@ -112,7 +120,10 @@ class ClientCursor {
 final Map<String, ClientCursor> cursors = {};
 
 void removeWebsocket(WebSocketChannel ws) {
+  print('User left');
   webSockets.remove(ws);
+
+  versionMap.remove(ws);
   String cursorID = "";
 
   cursors.forEach(
@@ -124,12 +135,15 @@ void removeWebsocket(WebSocketChannel ws) {
   );
 
   if (cursorID != "") {
+    print('User ID: $cursorID');
     cursors.remove(cursorID);
     for (var ws in webSockets) {
       ws.sink.add('remove-cursor $cursorID');
     }
   }
 }
+
+Map<WebSocketChannel, String> versionMap = {};
 
 Future<HttpServer> createServer() async {
   final ws = webSocketHandler(
@@ -217,12 +231,20 @@ Future<HttpServer> createServer() async {
                     double.parse(args[3]),
                     ws,
                   );
+                  print('New cursor created. Client ID: ${args[1]}');
                 } else {
                   cursors[args[1]]!.x = double.parse(args[2]);
                   cursors[args[1]]!.y = double.parse(args[3]);
                 }
                 for (var ws in webSockets) {
                   ws.sink.add(data);
+                }
+                break;
+              case "version":
+                if (versions.contains(args[1])) {
+                  versionMap[ws] = args[1];
+                } else {
+                  kickWS(ws);
                 }
                 break;
               default:
@@ -258,8 +280,16 @@ Future<HttpServer> createServer() async {
             ws.sink.add('set-cursor $id ${cursor.x} ${cursor.y}');
           },
         );
+      } // Send grid to client
 
-        // Send grid to client
+      if (versions.isNotEmpty) {
+        Future.delayed(Duration(milliseconds: 500)).then(
+          (v) {
+            if (!versions.contains(versionMap[ws])) {
+              kickWS(ws);
+            }
+          },
+        );
       }
     },
   );
@@ -287,4 +317,10 @@ Future<String> parseIP(String ip) async {
   }
 
   return ip;
+}
+
+void kickWS(WebSocketChannel ws) {
+  removeWebsocket(ws);
+  ws.sink.close();
+  print('A user has been kicked');
 }
