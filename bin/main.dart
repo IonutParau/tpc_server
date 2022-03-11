@@ -321,9 +321,9 @@ Future<String> parseIP(String ip) async {
 }
 
 void kickWS(WebSocketChannel ws) {
-  final kick_allowed = config['kick-allowed'];
+  final kickAllowed = config['kick-allowed'];
 
-  if (kick_allowed == 'true') {
+  if (kickAllowed == 'true') {
     removeWebsocket(ws);
     ws.sink.close();
     print('A user has been kicked');
