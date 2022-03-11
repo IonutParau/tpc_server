@@ -242,7 +242,7 @@ Future<HttpServer> createServer() async {
                 }
                 break;
               case "version":
-                if (versions.contains(args[1])) {
+                if (versions.contains(args[1]) && versions.isNotEmpty) {
                   versionMap[ws] = args[1];
                 } else {
                   kickWS(ws);
@@ -322,7 +322,7 @@ Future<String> parseIP(String ip) async {
 
 void kickWS(WebSocketChannel ws) {
   final kick_allowed = config['kick-allowed'];
-  
+
   if (kick_allowed == 'true') {
     removeWebsocket(ws);
     ws.sink.close();
