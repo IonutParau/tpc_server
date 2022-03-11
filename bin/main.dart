@@ -48,6 +48,7 @@ void main(List<String> arguments) async {
   final args = ArgParser();
   args.addOption('ip', defaultsTo: 'local');
   args.addOption('port', defaultsTo: '8080');
+  args.addOption('kick-allowed', defaultsTo: 'true');
   args.addFlag('silent', negatable: false);
 
   config = args.parse(arguments);
@@ -320,7 +321,13 @@ Future<String> parseIP(String ip) async {
 }
 
 void kickWS(WebSocketChannel ws) {
-  removeWebsocket(ws);
-  ws.sink.close();
-  print('A user has been kicked');
+  final kick_allowed = config['kick-allowed'];
+  
+  if (kick_allowed == 'true') {
+    removeWebsocket(ws);
+    ws.sink.close();
+    print('A user has been kicked');
+  } else {
+    print('A user wasnt kicked');
+  }
 }

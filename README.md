@@ -8,7 +8,33 @@ You can install the Dart SDK, download the source code and run it if you want th
 
 # How to run server?
 
-You can run a server by running the executable or the source code, but you can also use some flags and options to customize the server. You can use the `--ip=<ip>` flag, in this case `<ip>` can be your IP or `self`, `local` and `zero`. `self` will translate to your public IP obtained using Ipify. `local` will translate to `127.0.0.1`, and if you know any networking, you will know that `127.0.0.1` means your local computer only. `zero` is `0.0.0.0` and is for LAN, meaning the computers in the network have to be physicall connected using Ethernet.
+You can run a server by running the executable or the source code, but you can also use some flags and options to customize the server.
+
+# Flags and options
+
+`--ip` flag:
+
+Specifies IP to be used by server, default is `--ip=local`
+- `self`: will automatically get your public IP using Ipify.
+- `local`: equals to `localhost` or `127.0.0.1`, means it will be only accessable by your computer and no other.
+- `zero`: equlas to `0.0.0.0` and opens your server for LAN, meaning the computers in the network have to be physically connected using Ethernet or use the same WiFi network.
+- any other option will tell server to run on specified IP address.
+
+
+`--port` flag:
+
+Specifies port to be used by server, default is `--port=8080`
+
+
+`--silent` flag:
+
+Will reduce amount of messages you get in console, default is `--silent=false`
+
+
+`--kick-allowed` flag:
+
+Setting this to `false` will disallow server to kick any members, default is `--kick-allowed=true`
+
 
 # Does this server automatically open ports?
 
