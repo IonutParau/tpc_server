@@ -142,5 +142,4 @@ packages:
     source: hosted
     version: "2.1.0"
 sdks:
-  # replit uses version 2.12 so we downgrade sdk requirements to support it
   dart: ">=2.14.0 <3.0.0"
