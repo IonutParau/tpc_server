@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:args/args.dart';
 import 'package:dart_ipify/dart_ipify.dart';
@@ -17,6 +18,7 @@ import 'grid.dart';
 
 [Logic Management]
 - edtype <type> - Is the editor type wanted by the server
+- version <version> - Sends the version to the server for versionb validation (server only)
 
 [Hover Management]
 - new-hover <uuid> <x> <y> <id> <rot> - Creates new hover
@@ -110,6 +112,13 @@ void main(List<String> arguments) async {
       'Server should be online, at ws://${server.address.address}:${server.port}/',
     );
   }
+
+  // Timer.periodic(Duration(seconds: 1), (timer) {
+  //   stdout.write('> ');
+  //   final msg = stdin.readLineSync()!.split(' ');
+
+  //   processCommand(msg.first, msg.sublist(1));
+  // });
 }
 
 var versions = <String>[];
@@ -262,7 +271,7 @@ Future<HttpServer> createServer() async {
               case "version":
                 if (versions.contains(args[1])) {
                   versionMap[ws] = args[1];
-                } else {
+                } else if (versions.isNotEmpty) {
                   kickWS(ws);
                 }
                 break;
@@ -340,9 +349,9 @@ Future<String> parseIP(String ip) async {
 }
 
 void kickWS(WebSocketChannel ws) {
-  final kick_allowed = config['kick-allowed'];
-  
-  if (kick_allowed == 'true') {
+  final kickAllowed = config['kick-allowed'];
+
+  if (kickAllowed == 'true') {
     removeWebsocket(ws);
     ws.sink.close();
     print('A user has been kicked');
