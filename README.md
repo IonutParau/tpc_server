@@ -31,6 +31,16 @@ Specifies port to be used by server, default is `--port=8080`
 Will reduce amount of messages you get in console, default is `--silent=false`
 
 
+`--type` flag:
+
+Either `sandbox` or `level`, if not set then is asked in console.
+
+
+`--width` and `--height` flag:
+
+Sets size of level in `sandbox` mode, if not set then is asked in console.
+
+
 `--kick-allowed` flag:
 
 Setting this to `false` will disallow server to kick any members, default is `--kick-allowed=true`

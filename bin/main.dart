@@ -333,7 +333,7 @@ Future<HttpServer> createServer() async {
 
 Future<String> parseIP(String ip) async {
   if (ip == 'local' || ip == 'localhost') {
-    print('[WARNING!] IP is set to local, meaning server will be only accessable by this computer and no other.');
+    print('!!! [WARNING] IP is set to local, meaning server will be only accessable by this computer and no other.');
     return '127.0.0.1';
   }
 
