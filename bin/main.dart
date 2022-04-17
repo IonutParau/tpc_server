@@ -53,26 +53,44 @@ void main(List<String> arguments) async {
   args.addOption('kick-allowed', defaultsTo: 'true');
   args.addFlag('silent', negatable: false);
 
+  args.addOption('type', defaultsTo: 'false');
+  args.addOption('width', defaultsTo: 'false');
+  args.addOption('height', defaultsTo: 'false');
+
   config = args.parse(arguments);
+  
+  var server_type = config['type'];
+  var width = config['width'];
+  var height = config['height'];
 
   print("Welcome to The Puzzle Cell Server Handling System");
 
-  print("Please input server type (sandbox / level)");
-  final input = stdin.readLineSync();
-
-  if (input != "sandbox" && input != "level") {
+  if (server_type == "false") {
+    print("Please input server type (sandbox / level)");
+    server_type = stdin.readLineSync();
+  }
+  
+  if (server_type != "sandbox" && server_type != "level") {
     print("Invalid server type");
     return;
   }
 
-  if (input == "level") type = ServerType.level;
+  if (server_type == "level") type = ServerType.level;
 
-  if (type == ServerType.sandbox) {
-    print("Please input grid width");
-    final width = int.parse(stdin.readLineSync()!);
-    print("Please input grid height");
-    final height = int.parse(stdin.readLineSync()!);
-    makeGrid(width, height);
+  if (server_type == "sandbox") {
+	type = ServerType.level;
+    
+    if (width == "false") {
+      print("Please input grid width");
+      width = stdin.readLineSync()!;
+    }
+    
+    if (height == "false") {
+      print("Please input grid height");
+      height = stdin.readLineSync()!;
+    }
+    
+    makeGrid(int.parse(width), int.parse(height));
   } else {
     print("Please input level code (P2 only)");
     final code = stdin.readLineSync()!;
@@ -315,6 +333,7 @@ Future<HttpServer> createServer() async {
 
 Future<String> parseIP(String ip) async {
   if (ip == 'local' || ip == 'localhost') {
+    print('!!! [WARNING] IP is set to local, meaning server will be only accessable by this computer and no other.');
     return '127.0.0.1';
   }
 
