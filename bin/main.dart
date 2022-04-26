@@ -61,39 +61,39 @@ void main(List<String> arguments) async {
   args.addOption('height', defaultsTo: 'false');
 
   config = args.parse(arguments);
-  
-  var server_type = config['type'];
+
+  var serverType = config['type'];
   var width = config['width'];
   var height = config['height'];
 
   print("Welcome to The Puzzle Cell Server Handling System");
   print("Server version: $v");
 
-  if (server_type == "false") {
+  if (serverType == "false") {
     print("Please input server type (sandbox / level)");
-    server_type = stdin.readLineSync();
+    serverType = stdin.readLineSync();
   }
-  
-  if (server_type != "sandbox" && server_type != "level") {
+
+  if (serverType != "sandbox" && serverType != "level") {
     print("Invalid server type");
     return;
   }
 
-  if (server_type == "level") type = ServerType.level;
+  if (serverType == "level") type = ServerType.level;
 
-  if (server_type == "sandbox") {
-	type = ServerType.level;
-    
+  if (serverType == "sandbox") {
+    type = ServerType.level;
+
     if (width == "false") {
       print("Please input grid width");
       width = stdin.readLineSync()!;
     }
-    
+
     if (height == "false") {
       print("Please input grid height");
       height = stdin.readLineSync()!;
     }
-    
+
     makeGrid(int.parse(width), int.parse(height));
   } else {
     print("Please input level code (P2 only)");
@@ -368,7 +368,8 @@ Future<HttpServer> createServer() async {
 
 Future<String> parseIP(String ip) async {
   if (ip == 'local' || ip == 'localhost') {
-    print('!!! [WARNING] IP is set to local, meaning server will be only accessable by this computer and no other.');
+    print(
+        '!!! [WARNING] IP is set to local, meaning server will be only accessable by this computer and no other.');
     return '127.0.0.1';
   }
 
