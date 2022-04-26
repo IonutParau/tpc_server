@@ -77,6 +77,8 @@ void main(List<String> arguments) async {
   final aV = config['versions'].split(':') as List<String>;
   if (aV.isNotEmpty) versions.addAll(aV);
 
+  fixVersions();
+
   final aWL = config['whitelist'].split(':') as List<String>;
   if (aWL.isNotEmpty) versions.addAll(aWL);
 
@@ -161,6 +163,23 @@ void main(List<String> arguments) async {
 
   //   processCommand(msg.first, msg.sublist(1));
   // });
+}
+
+void fixVersions() {
+  for (var i = 0; i < versions.length; i++) {
+    versions[i] = fixVersion(versions[i]);
+  }
+}
+
+String fixVersion(String v) {
+  while (v.endsWith(".0")) {
+    v = v.substring(
+      0,
+      v.length - 2,
+    ); // No more .0
+  }
+
+  return v;
 }
 
 var versions = <String>[];
@@ -358,7 +377,7 @@ Future<HttpServer> createServer() async {
 
                 clientIDList.add(id);
 
-                if (versions.contains(v) || versions.isEmpty) {
+                if (versions.contains(fixVersion(v)) || versions.isEmpty) {
                   versionMap[ws] = v;
                   clientIDs[ws] = id;
                   if (!config['silent']) {
@@ -369,6 +388,12 @@ Future<HttpServer> createServer() async {
                     print("A user has joined with incompatible version");
                   }
                   kickWS(ws);
+                } else {
+                  versionMap[ws] = v;
+                  clientIDs[ws] = id;
+                  if (!config['silent']) {
+                    print("A new user has joined. ID: $id. Version: $v");
+                  }
                 }
                 break;
               default:
@@ -414,7 +439,7 @@ Future<HttpServer> createServer() async {
       if (versions.isNotEmpty) {
         Future.delayed(Duration(milliseconds: 500)).then(
           (v) {
-            if (!versions.contains(versionMap[ws])) {
+            if (!versions.contains(fixVersion(versionMap[ws] ?? ""))) {
               kickWS(ws);
             }
           },
