@@ -8,7 +8,7 @@ import 'package:shelf_web_socket/shelf_web_socket.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'grid.dart';
 
-final v = "2.0.0";
+final v = "2.0.0.1";
 
 // API docs
 /*
@@ -34,6 +34,8 @@ final v = "2.0.0";
 
 */
 
+var whitelist = <String>[];
+
 enum ServerType {
   sandbox,
   level,
@@ -50,11 +52,18 @@ void main(List<String> arguments) async {
     versions = vf.readAsLinesSync();
   }
 
+  final whitelistFile = File('whitelist.txt');
+  if (whitelistFile.existsSync()) {
+    print('Reading allowed IDs...');
+    whitelist = whitelistFile.readAsLinesSync();
+  }
+
   final args = ArgParser();
   args.addOption('ip', defaultsTo: 'local');
   args.addOption('port', defaultsTo: '8080');
   args.addOption('kick-allowed', defaultsTo: 'true');
   args.addFlag('silent', negatable: false);
+  args.addFlag('block_uuid', negatable: false);
 
   args.addOption('type', defaultsTo: 'false');
   args.addOption('width', defaultsTo: 'false');
@@ -82,7 +91,7 @@ void main(List<String> arguments) async {
   if (serverType == "level") type = ServerType.level;
 
   if (serverType == "sandbox") {
-    type = ServerType.level;
+    type = ServerType.sandbox;
 
     if (width == "false") {
       print("Please input grid width");
@@ -174,6 +183,7 @@ final Set<String> clientIDList = {};
 
 void removeWebsocket(WebSocketChannel ws) {
   print('User left');
+  ws.sink.close();
   webSockets.remove(ws);
 
   versionMap.remove(ws);
@@ -185,7 +195,6 @@ void removeWebsocket(WebSocketChannel ws) {
   for (var ws in webSockets) {
     ws.sink.add('remove-cursor $cursorID');
   }
-  ws.sink.close();
 }
 
 Map<WebSocketChannel, String> versionMap = {};
@@ -299,7 +308,30 @@ Future<HttpServer> createServer() async {
                   break;
                 }
 
-                if (clientIDList.contains(id)) break;
+                if (clientIDList.contains(id)) {
+                  print("A user attempted to connect with duplicate ID");
+                  kickWS(ws);
+                  break;
+                }
+                if (whitelist.isNotEmpty) {
+                  if (whitelist.contains(id)) {
+                    print("User with whitelisted ID: $id has joined.");
+                  } else {
+                    print("User attempted to join with blocked ID");
+                    kickWS(ws);
+                    break;
+                  }
+                }
+
+                if (config['block_uuid']) {
+                  print('UUID blocking is enabled, validating ID...');
+                  if (id.split('-').length == 5) {
+                    print('Blocked ID $id');
+                    kickWS(ws);
+                    break;
+                  }
+                }
+
                 clientIDList.add(id);
 
                 if (versions.contains(v) || versions.isEmpty) {
@@ -312,6 +344,9 @@ Future<HttpServer> createServer() async {
                 }
                 break;
               default:
+                print(
+                  'Randomly got invalid packet $data. Sending to other clients.',
+                );
                 for (var ws in webSockets) {
                   ws.sink.add(data);
                 }
@@ -369,8 +404,6 @@ Future<HttpServer> createServer() async {
 
 Future<String> parseIP(String ip) async {
   if (ip == 'local' || ip == 'localhost') {
-    print(
-        '!!! [WARNING] IP is set to local, meaning server will be only accessable by this computer and no other.');
     return '127.0.0.1';
   }
 
