@@ -185,6 +185,7 @@ void removeWebsocket(WebSocketChannel ws) {
   for (var ws in webSockets) {
     ws.sink.add('remove-cursor $cursorID');
   }
+  ws.sink.close();
 }
 
 Map<WebSocketChannel, String> versionMap = {};
@@ -389,7 +390,6 @@ void kickWS(WebSocketChannel ws) {
 
   if (kickAllowed == 'true') {
     removeWebsocket(ws);
-    ws.sink.close();
     print('A user has been kicked');
   } else {
     print('A user wasnt kicked');
