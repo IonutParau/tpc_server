@@ -43,7 +43,7 @@ Setting this to `false` will disallow server to kick any members, default is `--
 
 `--versions` flag:
 
-Set this to the versions you want to allow seperated by `:`. Defaults to nothing, meaning all versions are allowed.
+Set this to the versions you want to allow seperated by `:`. Defaults to `2`, meaning only `2.0` is allowed
 
 `--whitelist` flag:
 
