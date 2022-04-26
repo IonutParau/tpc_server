@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'package:args/args.dart';
 import 'package:dart_ipify/dart_ipify.dart';
@@ -6,6 +7,8 @@ import 'package:shelf/shelf_io.dart' as sio;
 import 'package:shelf_web_socket/shelf_web_socket.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'grid.dart';
+
+final v = "2.0.0";
 
 // API docs
 /*
@@ -56,6 +59,7 @@ void main(List<String> arguments) async {
   config = args.parse(arguments);
 
   print("Welcome to The Puzzle Cell Server Handling System");
+  print("Server version: $v");
 
   print("Please input server type (sandbox / level)");
   final input = stdin.readLineSync();
@@ -90,6 +94,24 @@ void main(List<String> arguments) async {
   if (config['silent']) {
     print('Server should be online');
   } else {
+    if (config['ip'] == "local" || config['ip'] == "127.0.0.1") {
+      print(
+        "You have ran this server on the localhost IP address constant (127.0.0.1)",
+      );
+      print(
+        "This means only you can connect to the server, as the localhost IP address only allows the computer it is hosted on to access it",
+      );
+    } else if (config['ip'] == 'zero' || config['ip'] == '0.0.0.0') {
+      print("You have ran this server on IP 0.0.0.0");
+      print(
+        "This means only people connected through an ethernet wire can connect to it",
+      );
+    } else if (config['ip'] == 'self') {
+      print(
+        "WARNING: In 5 seconds it will say at what IP the server is hosted. You have no configured it to be local or zero, meaning it will display your actual IP",
+      );
+      await Future.delayed(Duration(seconds: 5));
+    }
     print(
       'Server should be online, at ws://${server.address.address}:${server.port}/',
     );
@@ -129,27 +151,21 @@ class ClientCursor {
 
 final Map<String, ClientCursor> cursors = {};
 
+final Map<WebSocketChannel, String> clientIDs = {};
+final Set<String> clientIDList = {};
+
 void removeWebsocket(WebSocketChannel ws) {
   print('User left');
   webSockets.remove(ws);
 
   versionMap.remove(ws);
-  String cursorID = "";
-
-  cursors.forEach(
-    (id, cursor) {
-      if (cursor.author == ws) {
-        cursorID = id;
-      }
-    },
-  );
-
-  if (cursorID != "") {
-    print('User ID: $cursorID');
-    cursors.remove(cursorID);
-    for (var ws in webSockets) {
-      ws.sink.add('remove-cursor $cursorID');
-    }
+  String? cursorID = clientIDs[ws];
+  if (cursorID == null) return;
+  clientIDList.remove(cursorID);
+  print('User ID: $cursorID');
+  cursors.remove(cursorID);
+  for (var ws in webSockets) {
+    ws.sink.add('remove-cursor $cursorID');
   }
 }
 
@@ -235,6 +251,7 @@ Future<HttpServer> createServer() async {
                 }
                 break;
               case "set-cursor":
+                if (args[1] != clientIDs[ws]) break;
                 if (cursors[args[1]] == null) {
                   cursors[args[1]] = ClientCursor(
                     double.parse(args[2]),
@@ -250,10 +267,28 @@ Future<HttpServer> createServer() async {
                   ws.sink.add(data);
                 }
                 break;
-              case "version":
-                if (versions.contains(args[1])) {
-                  versionMap[ws] = args[1];
+              case "token":
+                final tokenJSON = jsonDecode(args.sublist(1).join(" "));
+                final v = tokenJSON["version"];
+                if (v is! String) {
+                  kickWS(ws);
+                  break;
+                }
+                final id = tokenJSON["clientID"];
+                if (id is! String) {
+                  kickWS(ws);
+                  break;
+                }
+
+                if (clientIDList.contains(id)) break;
+                clientIDList.add(id);
+
+                if (versions.contains(v) || versions.isEmpty) {
+                  versionMap[ws] = v;
+                  clientIDs[ws] = id;
+                  print("A new user has joined. ID: $id. Version: $v");
                 } else if (versions.isNotEmpty) {
+                  print("A user has joined with incompatible version");
                   kickWS(ws);
                 }
                 break;
