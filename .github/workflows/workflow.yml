@@ -1,0 +1,23 @@
+on: push
+
+jobs:
+  build_windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: DanTup/gh-actions/setup-dart@master
+      - run: dart compile exe bin/main.dart -o build/Windows.exe
+      - uses: actions/upload-artifact@v1
+        with:
+          name: WindowsExe
+          path: build
+  build_linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: DanTup/gh-actions/setup-dart@master
+      - run: dart compile exe bin/main.dart -o build/Linux.exe
+      - uses: actions/upload-artifact@v1
+        with:
+          name: LinuxExe
+          path: build
