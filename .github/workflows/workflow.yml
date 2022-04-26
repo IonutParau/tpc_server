@@ -6,6 +6,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: DanTup/gh-actions/setup-dart@master
+      - run: dart pub get
       - run: dart compile exe bin/main.dart -o build/Windows.exe
       - uses: actions/upload-artifact@v1
         with:
@@ -16,6 +17,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: DanTup/gh-actions/setup-dart@master
+      - run: dart pub get
       - run: dart compile exe bin/main.dart -o build/Linux.exe
       - uses: actions/upload-artifact@v1
         with:
