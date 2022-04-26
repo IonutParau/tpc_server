@@ -23,3 +23,14 @@ jobs:
         with:
           name: LinuxExe
           path: build
+  build_mac:
+    runs-on: macOS-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: DanTup/gh-actions/setup-dart@master
+      - run: dart pub get
+      - run: dart compile exe bin/main.dart -v -o "build/MacOS.exe"
+      - uses: actions/upload-artifact@v1
+        with:
+          name: MacOSExe
+          path: build
