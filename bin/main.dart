@@ -54,7 +54,7 @@ void main(List<String> arguments) async {
   args.addOption('kick-allowed', defaultsTo: 'true');
   args.addOption('versions', defaultsTo: '2');
   args.addOption('whitelist', defaultsTo: '');
-    args.addOption('blacklist', defaultsTo: '');
+  args.addOption('blacklist', defaultsTo: '');
   args.addOption('wait_time', defaultsTo: '1000');
   args.addFlag('silent', negatable: false);
   args.addFlag('block_uuid', negatable: false);
@@ -92,9 +92,9 @@ void main(List<String> arguments) async {
   final aWL = config['whitelist'].split(':') as List<String>;
   if (aWL.isNotEmpty) versions.addAll(aWL);
   final aBL = config['blacklist'].split(':') as List<String>;
-  if (aBL.isNotEmpty){
+  if (aBL.isNotEmpty) {
     versions.addAll(aBL);
-    if(blacklist.contains("@uuid")){
+    if (blacklist.contains("@uuid")) {
       uuidBl = true;
     }
   }
@@ -113,7 +113,10 @@ void main(List<String> arguments) async {
     serverType = stdin.readLineSync();
   }
 
-  if (serverType != "sandbox" && serverType != "level" && serverType != "1" && serverType != "2") {
+  if (serverType != "sandbox" &&
+      serverType != "level" &&
+      serverType != "1" &&
+      serverType != "2") {
     print("Invalid server type");
     return;
   }
@@ -365,7 +368,7 @@ Future<HttpServer> createServer() async {
                   kickWS(ws);
                   break;
                 }
-                
+
                 if (clientIDList.contains(id)) {
                   if (!config['silent']) {
                     print("A user attempted to connect with duplicate ID");
@@ -392,7 +395,7 @@ Future<HttpServer> createServer() async {
                       kickWS(ws);
                       break;
                     }
-                 }
+                  }
                 }
 
                 if (config['block_uuid'] || uuidBl) {
@@ -444,13 +447,14 @@ Future<HttpServer> createServer() async {
         onError: (e) => removeWebsocket(ws),
       );
 
-      gridCache ??= P2.encodeGrid();
-      ws.sink.add('grid $gridCache');
+      // Send grid
+      gridCache ??= P2.encodeGrid(); // Speeeeeed
+      ws.sink.add('grid $gridCache'); // Send to client
 
       if (type == ServerType.level) {
         ws.sink.add(
           'edtype puzzle',
-        );
+        ); // Send special editor type
 
         hovers.forEach(
           (uuid, hover) {
@@ -458,35 +462,36 @@ Future<HttpServer> createServer() async {
               'new-hover $uuid ${hover.x} ${hover.y} ${hover.id} ${hover.rot}',
             );
           },
-        );
+        ); // Send hovering cells
 
         cursors.forEach(
           (id, cursor) {
             ws.sink.add('set-cursor $id ${cursor.x} ${cursor.y}');
           },
-        );
-      } // Send grid to client
+        ); // Send cursors
+      }
 
       if (versions.isNotEmpty) {
         Future.delayed(Duration(milliseconds: int.parse(config['wait_time'])))
             .then(
           (v) {
             if (!versions.contains(fixVersion(versionMap[ws] ?? ""))) {
-              kickWS(ws);
-            }
+              print("User kicked for no connection token sent");
+              kickWS(ws); // Remove for invalid version
+            } // Version check
           },
         );
-      }
+      } // Version checking
     },
   );
 
-  final ip = await parseIP(config['ip']!);
+  final ip = await parseIP(config['ip']!); // Parse IP
 
-  final port = int.parse(config['port']);
+  final port = int.parse(config['port']); // Parse port
 
-  final server = await sio.serve(ws, ip, port);
+  final server = await sio.serve(ws, ip, port); // Create server
 
-  return server;
+  return server; // Return server
 }
 
 Future<String> parseIP(String ip) async {
