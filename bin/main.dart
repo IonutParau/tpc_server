@@ -183,6 +183,7 @@ final Map<WebSocketChannel, String> clientIDs = {};
 final Set<String> clientIDList = {};
 
 void removeWebsocket(WebSocketChannel ws) {
+  if (!webSockets.contains(ws)) return;
   print('User left');
   ws.sink.close();
   webSockets.remove(ws);
