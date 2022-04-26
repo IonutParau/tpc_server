@@ -35,6 +35,7 @@ final v = "2.0.0.2";
 */
 
 var whitelist = <String>[];
+var blacklist = <String>[];
 
 enum ServerType {
   sandbox,
@@ -42,6 +43,7 @@ enum ServerType {
 }
 
 var type = ServerType.sandbox;
+var uuidBl = false;
 
 late ArgResults config;
 
@@ -52,6 +54,7 @@ void main(List<String> arguments) async {
   args.addOption('kick-allowed', defaultsTo: 'true');
   args.addOption('versions', defaultsTo: '2');
   args.addOption('whitelist', defaultsTo: '');
+    args.addOption('blacklist', defaultsTo: '');
   args.addOption('wait_time', defaultsTo: '1000');
   args.addFlag('silent', negatable: false);
   args.addFlag('block_uuid', negatable: false);
@@ -75,6 +78,12 @@ void main(List<String> arguments) async {
     whitelist = whitelistFile.readAsLinesSync();
   }
 
+  final blacklistFile = File('blacklist.txt');
+  if (blacklistFile.existsSync()) {
+    if (!config['silent']) print('Reading banned IDs...');
+    blacklist = blacklistFile.readAsLinesSync();
+  }
+
   final aV = config['versions'].split(':') as List<String>;
   if (aV.isNotEmpty) versions.addAll(aV);
 
@@ -82,6 +91,13 @@ void main(List<String> arguments) async {
 
   final aWL = config['whitelist'].split(':') as List<String>;
   if (aWL.isNotEmpty) versions.addAll(aWL);
+  final aBL = config['blacklist'].split(':') as List<String>;
+  if (aBL.isNotEmpty){
+    versions.addAll(aBL);
+    if(blacklist.contains("@uuid")){
+      uuidBl = true;
+    }
+  }
 
   var serverType = config['type'];
   var width = config['width'];
@@ -93,18 +109,18 @@ void main(List<String> arguments) async {
   if (!config['silent']) print("Server version: $v");
 
   if (serverType == "false") {
-    print("Please input server type (sandbox / level)");
+    print("Please input server type (sandbox [1]/ level [2])");
     serverType = stdin.readLineSync();
   }
 
-  if (serverType != "sandbox" && serverType != "level") {
+  if (serverType != "sandbox" && serverType != "level" && serverType != "1" && serverType != "2") {
     print("Invalid server type");
     return;
   }
 
-  if (serverType == "level") type = ServerType.level;
+  if (serverType == "level" || serverType == "2") type = ServerType.level;
 
-  if (serverType == "sandbox") {
+  if (serverType == "sandbox" || serverType == "1") {
     type = ServerType.sandbox;
 
     if (width == "false") {
@@ -137,7 +153,7 @@ void main(List<String> arguments) async {
   } else {
     if (config['ip'] == "local" || config['ip'] == "127.0.0.1") {
       print(
-        "You have ran this server on the localhost IP address constant (127.0.0.1)",
+        "You have ran this server on the localhost IP address constant (127.0.0.1 [localhost])",
       );
       print(
         "This means only you can connect to the server, as the localhost IP address only allows the computer it is hosted on to access it",
@@ -149,9 +165,9 @@ void main(List<String> arguments) async {
       );
     } else if (config['ip'] == 'self') {
       print(
-        "WARNING: In 5 seconds it will say at what IP the server is hosted. You have no configured it to be local or zero, meaning it will display your actual IP",
+        "WARNING: In 7 seconds it will say at what IP the server is hosted. You have no configured it to be local or zero, meaning it will display your actual IP",
       );
-      await Future.delayed(Duration(seconds: 5));
+      await Future.delayed(Duration(seconds: 7));
     }
     print(
       'Server should be online, at ws://${server.address.address}:${server.port}/',
@@ -349,9 +365,7 @@ Future<HttpServer> createServer() async {
                   kickWS(ws);
                   break;
                 }
-
-                print(versions);
-
+                
                 if (clientIDList.contains(id)) {
                   if (!config['silent']) {
                     print("A user attempted to connect with duplicate ID");
@@ -371,7 +385,17 @@ Future<HttpServer> createServer() async {
                   }
                 }
 
-                if (config['block_uuid']) {
+                if (blacklist.isNotEmpty) {
+                  if (blacklist.contains(id)) {
+                    if (!config['silent']) {
+                      print("User attempted to join with a blocked ID");
+                      kickWS(ws);
+                      break;
+                    }
+                 }
+                }
+
+                if (config['block_uuid'] || uuidBl) {
                   if (!config['silent']) {
                     print('UUID blocking is enabled, validating ID...');
                   }

@@ -43,11 +43,15 @@ Setting this to `false` will disallow server to kick any members, default is `--
 
 `--versions` flag:
 
-Set this to the versions you want to allow seperated by `:`. Defaults to `2`, meaning only `2.0` is allowed
+Set this to the versions you want to allow seperated by `:`. Defaults to nothing, meaning all versions are allowed.
 
 `--whitelist` flag:
 
 Set this to the whitelisted IDs you want to allow seperated by `:`. Defaults to nothing, meaning all IDs are allowed.
+
+`--blacklist` flag:
+
+Set this to the blacklisted IDs you want to allow seperated by `:`. Defaults to nothing, meaning all IDs are allowed.
 
 `--block_uuid` flag:
 
@@ -63,5 +67,6 @@ No, it doesn't. You still have to open it and manage your firewall.
 
 # Any other special configurations?
 
-You can create a `whitelist.txt` file to put in each line allowed IDs
+You can create a `whitelist.txt` file to put in each line allowed IDs,
+You can create a `blacklist.txt` file to put in each line blocked IDs. If you put `@uuid` in there it will block UUIDs.
 You can also create a `versions.txt` file for versions to allow
