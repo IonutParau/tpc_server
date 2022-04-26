@@ -8,7 +8,7 @@ import 'package:shelf_web_socket/shelf_web_socket.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'grid.dart';
 
-final v = "2.0.0.1";
+final v = "2.0.0.2";
 
 // API docs
 /*
@@ -64,6 +64,7 @@ void main(List<String> arguments) async {
   args.addOption('kick-allowed', defaultsTo: 'true');
   args.addFlag('silent', negatable: false);
   args.addFlag('block_uuid', negatable: false);
+  args.addFlag('log', negatable: false);
 
   args.addOption('type', defaultsTo: 'false');
   args.addOption('width', defaultsTo: 'false');
@@ -206,6 +207,10 @@ Future<HttpServer> createServer() async {
       ws.stream.listen(
         (data) {
           if (data is String) {
+            if (config['log']) {
+              print('Packet from ${clientIDs[ws] ?? "Unknown"} > $data');
+            }
+
             final args = data.split(' ');
 
             switch (args.first) {
