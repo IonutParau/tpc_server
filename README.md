@@ -15,37 +15,53 @@ You can run a server by running the executable or the source code, but you can a
 `--ip` flag:
 
 Specifies IP to be used by server, default is `--ip=local`
+
 - `self`: will automatically get your public IP using Ipify.
 - `local`: equals to `localhost` or `127.0.0.1`, means it will be only accessable by your computer and no other.
 - `zero`: equlas to `0.0.0.0` and opens your server for LAN, meaning the computers in the network have to be physically connected using Ethernet or use the same WiFi network.
 - any other option will tell server to run on specified IP address.
 
-
 `--port` flag:
 
 Specifies port to be used by server, default is `--port=8080`
-
 
 `--silent` flag:
 
 Will reduce amount of messages you get in console, default is `--silent=false`
 
-
 `--type` flag:
 
 Either `sandbox` or `level`, if not set then is asked in console.
-
 
 `--width` and `--height` flag:
 
 Sets size of level in `sandbox` mode, if not set then is asked in console.
 
-
 `--kick-allowed` flag:
 
 Setting this to `false` will disallow server to kick any members, default is `--kick-allowed=true`
 
+`--versions` flag:
+
+Set this to the versions you want to allow seperated by `:`. Defaults to nothing, meaning all versions are allowed.
+
+`--whitelist` flag:
+
+Set this to the whitelisted IDs you want to allow seperated by `:`. Defaults to nothing, meaning all IDs are allowed.
+
+`--block_uuid` flag:
+
+Will block all IDs it thinks are UUIDs. This can be done to block people who are new to the game since they likely won't know how to change the consistent user ID. Defaults to false.
+
+`--log` flag:
+
+Will show in the console all packets coming from users. Defaults to false.
 
 # Does this server automatically open ports?
 
 No, it doesn't. You still have to open it and manage your firewall.
+
+# Any other special configurations?
+
+You can create a `whitelist.txt` file to put in each line allowed IDs
+You can also create a `versions.txt` file for versions to allow

@@ -46,22 +46,12 @@ var type = ServerType.sandbox;
 late ArgResults config;
 
 void main(List<String> arguments) async {
-  final vf = File('versions.txt');
-  if (vf.existsSync()) {
-    print('Reading allowed versions...');
-    versions = vf.readAsLinesSync();
-  }
-
-  final whitelistFile = File('whitelist.txt');
-  if (whitelistFile.existsSync()) {
-    print('Reading allowed IDs...');
-    whitelist = whitelistFile.readAsLinesSync();
-  }
-
   final args = ArgParser();
   args.addOption('ip', defaultsTo: 'local');
   args.addOption('port', defaultsTo: '8080');
   args.addOption('kick-allowed', defaultsTo: 'true');
+  args.addOption('versions', defaultsTo: '');
+  args.addOption('whitelist', defaultsTo: '');
   args.addFlag('silent', negatable: false);
   args.addFlag('block_uuid', negatable: false);
   args.addFlag('log', negatable: false);
@@ -72,12 +62,32 @@ void main(List<String> arguments) async {
 
   config = args.parse(arguments);
 
+  final vf = File('versions.txt');
+  if (vf.existsSync()) {
+    if (!config['silent']) print('Reading allowed versions...');
+    versions = vf.readAsLinesSync();
+  }
+
+  final whitelistFile = File('whitelist.txt');
+  if (whitelistFile.existsSync()) {
+    if (!config['silent']) print('Reading allowed IDs...');
+    whitelist = whitelistFile.readAsLinesSync();
+  }
+
+  final aV = config['versions'].split(':') as List<String>;
+  if (aV.isNotEmpty) versions.addAll(aV);
+
+  final aWL = config['whitelist'].split(':') as List<String>;
+  if (aWL.isNotEmpty) versions.addAll(aWL);
+
   var serverType = config['type'];
   var width = config['width'];
   var height = config['height'];
 
-  print("Welcome to The Puzzle Cell Server Handling System");
-  print("Server version: $v");
+  if (!config['silent']) {
+    print("Welcome to The Puzzle Cell Server Handling System");
+  }
+  if (!config['silent']) print("Server version: $v");
 
   if (serverType == "false") {
     print("Please input server type (sandbox / level)");
@@ -184,7 +194,7 @@ final Set<String> clientIDList = {};
 
 void removeWebsocket(WebSocketChannel ws) {
   if (!webSockets.contains(ws)) return;
-  print('User left');
+  if (!config['silent']) print('User left');
   ws.sink.close();
   webSockets.remove(ws);
 
@@ -192,7 +202,7 @@ void removeWebsocket(WebSocketChannel ws) {
   String? cursorID = clientIDs[ws];
   if (cursorID == null) return;
   clientIDList.remove(cursorID);
-  print('User ID: $cursorID');
+  if (!config['silent']) print('User ID: $cursorID');
   cursors.remove(cursorID);
   for (var ws in webSockets) {
     ws.sink.add('remove-cursor $cursorID');
@@ -292,7 +302,9 @@ Future<HttpServer> createServer() async {
                     double.parse(args[3]),
                     ws,
                   );
-                  print('New cursor created. Client ID: ${args[1]}');
+                  if (!config['silent']) {
+                    print('New cursor created. Client ID: ${args[1]}');
+                  }
                 } else {
                   cursors[args[1]]!.x = double.parse(args[2]);
                   cursors[args[1]]!.y = double.parse(args[3]);
@@ -315,13 +327,17 @@ Future<HttpServer> createServer() async {
                 }
 
                 if (clientIDList.contains(id)) {
-                  print("A user attempted to connect with duplicate ID");
+                  if (!config['silent']) {
+                    print("A user attempted to connect with duplicate ID");
+                  }
                   kickWS(ws);
                   break;
                 }
                 if (whitelist.isNotEmpty) {
                   if (whitelist.contains(id)) {
-                    print("User with whitelisted ID: $id has joined.");
+                    if (!config['silent']) {
+                      print("User with whitelisted ID: $id has joined.");
+                    }
                   } else {
                     print("User attempted to join with blocked ID");
                     kickWS(ws);
@@ -330,9 +346,11 @@ Future<HttpServer> createServer() async {
                 }
 
                 if (config['block_uuid']) {
-                  print('UUID blocking is enabled, validating ID...');
+                  if (!config['silent']) {
+                    print('UUID blocking is enabled, validating ID...');
+                  }
                   if (id.split('-').length == 5) {
-                    print('Blocked ID $id');
+                    if (!config['silent']) print('Blocked ID $id');
                     kickWS(ws);
                     break;
                   }
@@ -343,16 +361,22 @@ Future<HttpServer> createServer() async {
                 if (versions.contains(v) || versions.isEmpty) {
                   versionMap[ws] = v;
                   clientIDs[ws] = id;
-                  print("A new user has joined. ID: $id. Version: $v");
+                  if (!config['silent']) {
+                    print("A new user has joined. ID: $id. Version: $v");
+                  }
                 } else if (versions.isNotEmpty) {
-                  print("A user has joined with incompatible version");
+                  if (!config['silent']) {
+                    print("A user has joined with incompatible version");
+                  }
                   kickWS(ws);
                 }
                 break;
               default:
-                print(
-                  'Randomly got invalid packet $data. Sending to other clients.',
-                );
+                if (!config['silent']) {
+                  print(
+                    'Randomly got invalid packet $data. Sending to other clients.',
+                  );
+                }
                 for (var ws in webSockets) {
                   ws.sink.add(data);
                 }
@@ -429,8 +453,8 @@ void kickWS(WebSocketChannel ws) {
 
   if (kickAllowed == 'true') {
     removeWebsocket(ws);
-    print('A user has been kicked');
+    if (!config['silent']) print('A user has been kicked');
   } else {
-    print('A user wasnt kicked');
+    if (!config['silent']) print('A user wasnt kicked');
   }
 }
