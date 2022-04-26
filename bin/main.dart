@@ -52,6 +52,7 @@ void main(List<String> arguments) async {
   args.addOption('kick-allowed', defaultsTo: 'true');
   args.addOption('versions', defaultsTo: '');
   args.addOption('whitelist', defaultsTo: '');
+  args.addOption('wait_time', defaultsTo: '1000');
   args.addFlag('silent', negatable: false);
   args.addFlag('block_uuid', negatable: false);
   args.addFlag('log', negatable: false);
@@ -437,7 +438,8 @@ Future<HttpServer> createServer() async {
       } // Send grid to client
 
       if (versions.isNotEmpty) {
-        Future.delayed(Duration(milliseconds: 500)).then(
+        Future.delayed(Duration(milliseconds: int.parse(config['wait_time'])))
+            .then(
           (v) {
             if (!versions.contains(fixVersion(versionMap[ws] ?? ""))) {
               kickWS(ws);
