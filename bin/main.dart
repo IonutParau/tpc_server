@@ -50,7 +50,7 @@ void main(List<String> arguments) async {
   args.addOption('ip', defaultsTo: 'local');
   args.addOption('port', defaultsTo: '8080');
   args.addOption('kick-allowed', defaultsTo: 'true');
-  args.addOption('versions', defaultsTo: '');
+  args.addOption('versions', defaultsTo: '2');
   args.addOption('whitelist', defaultsTo: '');
   args.addOption('wait_time', defaultsTo: '1000');
   args.addFlag('silent', negatable: false);
@@ -169,6 +169,10 @@ void main(List<String> arguments) async {
 void fixVersions() {
   for (var i = 0; i < versions.length; i++) {
     versions[i] = fixVersion(versions[i]);
+  }
+
+  while (versions.contains('')) {
+    versions.remove('');
   }
 }
 
@@ -346,6 +350,8 @@ Future<HttpServer> createServer() async {
                   break;
                 }
 
+                print(versions);
+
                 if (clientIDList.contains(id)) {
                   if (!config['silent']) {
                     print("A user attempted to connect with duplicate ID");
@@ -378,7 +384,7 @@ Future<HttpServer> createServer() async {
 
                 clientIDList.add(id);
 
-                if (versions.contains(fixVersion(v)) || versions.isEmpty) {
+                if (versions.contains(fixVersion(v)) || (versions.isEmpty)) {
                   versionMap[ws] = v;
                   clientIDs[ws] = id;
                   if (!config['silent']) {
