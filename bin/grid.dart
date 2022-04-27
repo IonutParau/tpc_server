@@ -8,6 +8,22 @@ class Cell {
   String bg;
 
   Cell(this.id, this.rot, this.bg);
+
+  Cell get copy {
+    return Cell(id, rot, bg);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (other is Cell) {
+      return (id == other.id && rot == other.rot && bg == other.bg);
+    } else {
+      return false;
+    }
+  }
+
+  @override
+  int get hashCode => (rot * 4 + bg.hashCode + 20000 + rot.hashCode + 10000);
 }
 
 late List<List<Cell>> grid;

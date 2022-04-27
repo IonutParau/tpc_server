@@ -275,12 +275,15 @@ Future<HttpServer> createServer() async {
                   x = (x + grid.length) % grid.length;
                   y = (y + grid.first.length) % grid.first.length;
                 }
+                final old = grid[x][y].copy;
                 grid[x][y].id = args[3];
                 grid[x][y].rot = int.parse(args[4]);
-                for (var ws in webSockets) {
-                  ws.sink.add(data);
+                if (old != grid[x][y]) {
+                  for (var ws in webSockets) {
+                    ws.sink.add(data);
+                  }
+                  gridCache = null;
                 }
-                gridCache = null;
                 break;
               case "bg":
                 var x = int.parse(args[1]);
@@ -289,11 +292,14 @@ Future<HttpServer> createServer() async {
                   x = (x + grid.length) % grid.length;
                   y = (y + grid.first.length) % grid.first.length;
                 }
+                final old = grid[x][y].bg;
                 grid[x][y].bg = args[3];
-                for (var ws in webSockets) {
-                  ws.sink.add(data);
+                if (old != args[3]) {
+                  for (var ws in webSockets) {
+                    ws.sink.add(data);
+                  }
+                  gridCache = null;
                 }
-                gridCache = null;
                 break;
               case "wrap":
                 wrap = !wrap;
@@ -305,11 +311,13 @@ Future<HttpServer> createServer() async {
                 gridCache = null;
                 break;
               case "setinit":
-                P2.decodeGrid(args[1]);
-                for (var ws in webSockets) {
-                  ws.sink.add(data);
+                if (gridCache != args[1]) {
+                  P2.decodeGrid(args[1]);
+                  for (var ws in webSockets) {
+                    ws.sink.add(data);
+                  }
+                  gridCache = args[1];
                 }
-                gridCache = args[1];
                 break;
               case "new-hover":
                 hovers[args[1]] = CellHover(
