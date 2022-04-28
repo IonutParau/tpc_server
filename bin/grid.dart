@@ -46,6 +46,10 @@ void loopGridPos(Function(Cell, int, int) callback) {
   }
 }
 
+bool insideGrid(int x, int y) {
+  return (x >= 0 && y >= 0 && x < grid.length && y < grid[x].length);
+}
+
 String placeChar(String place) {
   if (place == "place") return "+";
   if (place == "red_place") return "R+";

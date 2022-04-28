@@ -14,14 +14,14 @@ final v = "2.0.0.2";
 /*
 
 [Grid Management]
-- place <x> <y> <id> <rot> - Places cell
+- place <x> <y> <id> <rot> <heat> - Places cell
 - bg <x> <y> <bg> - Sets background
 - wrap - Toggles wrap mode
 - setinit - Sets initial state on the server
 
 [Logic Management]
 - edtype <type> - Is the editor type wanted by the server
-- version <version> - Sends the version to the server for versionb validation (server only)
+- token <token JSON> - Server only, is how server knows of Client's ID and version.
 
 [Hover Management]
 - new-hover <uuid> <x> <y> <id> <rot> - Creates new hover
@@ -51,20 +51,26 @@ void main(List<String> arguments) async {
   final args = ArgParser();
   args.addOption('ip', defaultsTo: 'local');
   args.addOption('port', defaultsTo: '8080');
-  args.addOption('kick-allowed', defaultsTo: 'true');
-  args.addOption('versions', defaultsTo: '2');
+  args.addOption('versions', defaultsTo: '');
   args.addOption('whitelist', defaultsTo: '');
   args.addOption('blacklist', defaultsTo: '');
+  args.addOption('banned_packets', defaultsTo: '');
   args.addOption('wait_time', defaultsTo: '1000');
+  args.addFlag('kick-allowed');
   args.addFlag('silent', negatable: false);
   args.addFlag('block_uuid', negatable: false);
   args.addFlag('log', negatable: false);
+  args.addFlag('packetpass', negatable: true, defaultsTo: true);
 
   args.addOption('type', defaultsTo: 'false');
   args.addOption('width', defaultsTo: 'false');
   args.addOption('height', defaultsTo: 'false');
 
   config = args.parse(arguments);
+
+  if (config['banned_packets'] != "") {
+    bannedPackets.addAll(config['banned_packets'].split(':'));
+  }
 
   final vf = File('versions.txt');
   if (vf.existsSync()) {
@@ -85,12 +91,12 @@ void main(List<String> arguments) async {
   }
 
   final aV = config['versions'].split(':') as List<String>;
-  if (aV.isNotEmpty) versions.addAll(aV);
+  if (aV.isNotEmpty && (config['versions'] != "")) versions.addAll(aV);
 
   fixVersions();
 
   final aWL = config['whitelist'].split(':') as List<String>;
-  if (aWL.isNotEmpty) versions.addAll(aWL);
+  if ((aWL.isNotEmpty) && (config['whitelist'] != "")) versions.addAll(aWL);
   final aBL = config['blacklist'].split(':') as List<String>;
   if (aBL.isNotEmpty) {
     versions.addAll(aBL);
@@ -223,6 +229,11 @@ class CellHover {
 
 final Map<String, CellHover> hovers = {};
 
+final List<String> bannedPackets = [
+  "edtype",
+  "remove-cursor",
+];
+
 class ClientCursor {
   double x, y;
   WebSocketChannel author;
@@ -254,6 +265,221 @@ void removeWebsocket(WebSocketChannel ws) {
 
 Map<WebSocketChannel, String> versionMap = {};
 
+void execPacket(String data, WebSocketChannel ws) {
+  if (!webSockets.contains(ws)) return;
+
+  if (config['log']) {
+    print('Packet from ${clientIDs[ws] ?? "Unknown"} > $data');
+  }
+
+  final args = data.split(' ');
+
+  if (bannedPackets.contains(args.first)) {
+    print('Kicking user for sending banned packet ${args.first}');
+    kickWS(ws);
+    return;
+  }
+
+  switch (args.first) {
+    case "place":
+      var x = int.parse(args[1]);
+      var y = int.parse(args[2]);
+      if (wrap) {
+        x = (x + grid.length) % grid.length;
+        y = (y + grid.first.length) % grid.first.length;
+      }
+
+      if (!insideGrid(x, y)) break;
+
+      final old = grid[x][y].copy;
+      grid[x][y].id = args[3];
+      grid[x][y].rot = int.parse(args[4]);
+      if (old != grid[x][y]) {
+        for (var ws in webSockets) {
+          ws.sink.add(data);
+        }
+        gridCache = null;
+      }
+      break;
+    case "bg":
+      var x = int.parse(args[1]);
+      var y = int.parse(args[2]);
+      if (wrap) {
+        x = (x + grid.length) % grid.length;
+        y = (y + grid.first.length) % grid.first.length;
+      }
+
+      if (!insideGrid(x, y)) break;
+
+      final old = grid[x][y].bg;
+      grid[x][y].bg = args[3];
+      if (old != args[3]) {
+        for (var ws in webSockets) {
+          ws.sink.add(data);
+        }
+        gridCache = null;
+      }
+      break;
+    case "wrap":
+      wrap = !wrap;
+      for (var ows in webSockets) {
+        if (ows != ws) {
+          ows.sink.add(data);
+        }
+      }
+      gridCache = null;
+      break;
+    case "setinit":
+      if (gridCache != args[1]) {
+        P2.decodeGrid(args[1]);
+        for (var ws in webSockets) {
+          ws.sink.add(data);
+        }
+        gridCache = args[1];
+      }
+      break;
+    case "new-hover":
+      hovers[args[1]] = CellHover(
+        double.parse(args[2]),
+        double.parse(args[3]),
+        args[4],
+        int.parse(
+          args[5],
+        ),
+      );
+      for (var ws in webSockets) {
+        ws.sink.add(data);
+      }
+      break;
+    case "set-hover":
+      hovers[args[1]]!.x = double.parse(args[2]);
+      hovers[args[1]]!.y = double.parse(args[3]);
+      for (var ws in webSockets) {
+        ws.sink.add(data);
+      }
+      break;
+    case "drop-hover":
+      hovers.remove(args[1]);
+      for (var ws in webSockets) {
+        ws.sink.add(data);
+      }
+      break;
+    case "set-cursor":
+      if (args[1] != clientIDs[ws]) break;
+      if (cursors[args[1]] == null) {
+        cursors[args[1]] = ClientCursor(
+          double.parse(args[2]),
+          double.parse(args[3]),
+          ws,
+        );
+        if (!config['silent']) {
+          print('New cursor created. Client ID: ${args[1]}');
+        }
+      } else {
+        cursors[args[1]]!.x = double.parse(args[2]);
+        cursors[args[1]]!.y = double.parse(args[3]);
+      }
+      for (var ws in webSockets) {
+        ws.sink.add(data);
+      }
+      break;
+    case "token":
+      final tokenJSON = jsonDecode(args.sublist(1).join(" "));
+      final v = tokenJSON["version"];
+      if (v is! String) {
+        kickWS(ws);
+        break;
+      }
+      final id = tokenJSON["clientID"];
+      if (id is! String) {
+        kickWS(ws);
+        break;
+      }
+
+      if (clientIDList.contains(id)) {
+        if (!config['silent']) {
+          print("A user attempted to connect with duplicate ID");
+        }
+        kickWS(ws);
+        break;
+      }
+      if (whitelist.isNotEmpty) {
+        if (whitelist.contains(id)) {
+          if (!config['silent']) {
+            print("User with whitelisted ID: $id has joined.");
+          }
+        } else {
+          print("User attempted to join with blocked ID");
+          kickWS(ws);
+          break;
+        }
+      }
+
+      if (blacklist.isNotEmpty) {
+        if (blacklist.contains(id)) {
+          if (!config['silent']) {
+            print("User attempted to join with a blocked ID");
+            kickWS(ws);
+            break;
+          }
+        }
+      }
+
+      if (config['block_uuid'] || uuidBl) {
+        if (!config['silent']) {
+          print('UUID blocking is enabled, validating ID...');
+        }
+        if (id.split('-').length == 5) {
+          if (!config['silent']) print('Blocked ID $id');
+          kickWS(ws);
+          break;
+        }
+      }
+
+      clientIDList.add(id);
+
+      fixVersions();
+
+      if (versions.contains(fixVersion(v))) {
+        versionMap[ws] = fixVersion(v);
+        clientIDs[ws] = id;
+        if (!config['silent']) {
+          print("A new user has joined. ID: $id. Version: $v");
+        }
+      } else if (versions.isEmpty) {
+        versionMap[ws] = fixVersion(v);
+        clientIDs[ws] = id;
+        if (!config['silent']) {
+          print("A new user has joined. ID: $id. Version: $v");
+        }
+      } else if (versions.isNotEmpty) {
+        if (!config['silent']) {
+          print("A user has joined with incompatible version");
+        }
+        kickWS(ws);
+      } else {
+        versionMap[ws] = fixVersion(v);
+        clientIDs[ws] = id;
+        if (!config['silent']) {
+          print("A new user has joined. ID: $id. Version: $v");
+        }
+      }
+      break;
+    default:
+      if (config['packetpass']) {
+        if (!config['silent']) {
+          print(
+            'Randomly got invalid packet $data. Sending to other clients.',
+          );
+        }
+        for (var ws in webSockets) {
+          ws.sink.add(data);
+        }
+      }
+      break;
+  }
+}
+
 Future<HttpServer> createServer() async {
   final ws = webSocketHandler(
     (WebSocketChannel ws) {
@@ -261,193 +487,9 @@ Future<HttpServer> createServer() async {
       ws.stream.listen(
         (data) {
           if (data is String) {
-            if (config['log']) {
-              print('Packet from ${clientIDs[ws] ?? "Unknown"} > $data');
-            }
-
-            final args = data.split(' ');
-
-            switch (args.first) {
-              case "place":
-                var x = int.parse(args[1]);
-                var y = int.parse(args[2]);
-                if (wrap) {
-                  x = (x + grid.length) % grid.length;
-                  y = (y + grid.first.length) % grid.first.length;
-                }
-                final old = grid[x][y].copy;
-                grid[x][y].id = args[3];
-                grid[x][y].rot = int.parse(args[4]);
-                if (old != grid[x][y]) {
-                  for (var ws in webSockets) {
-                    ws.sink.add(data);
-                  }
-                  gridCache = null;
-                }
-                break;
-              case "bg":
-                var x = int.parse(args[1]);
-                var y = int.parse(args[2]);
-                if (wrap) {
-                  x = (x + grid.length) % grid.length;
-                  y = (y + grid.first.length) % grid.first.length;
-                }
-                final old = grid[x][y].bg;
-                grid[x][y].bg = args[3];
-                if (old != args[3]) {
-                  for (var ws in webSockets) {
-                    ws.sink.add(data);
-                  }
-                  gridCache = null;
-                }
-                break;
-              case "wrap":
-                wrap = !wrap;
-                for (var ows in webSockets) {
-                  if (ows != ws) {
-                    ows.sink.add(data);
-                  }
-                }
-                gridCache = null;
-                break;
-              case "setinit":
-                if (gridCache != args[1]) {
-                  P2.decodeGrid(args[1]);
-                  for (var ws in webSockets) {
-                    ws.sink.add(data);
-                  }
-                  gridCache = args[1];
-                }
-                break;
-              case "new-hover":
-                hovers[args[1]] = CellHover(
-                  double.parse(args[2]),
-                  double.parse(args[3]),
-                  args[4],
-                  int.parse(
-                    args[5],
-                  ),
-                );
-                for (var ws in webSockets) {
-                  ws.sink.add(data);
-                }
-                break;
-              case "set-hover":
-                hovers[args[1]]!.x = double.parse(args[2]);
-                hovers[args[1]]!.y = double.parse(args[3]);
-                for (var ws in webSockets) {
-                  ws.sink.add(data);
-                }
-                break;
-              case "drop-hover":
-                hovers.remove(args[1]);
-                for (var ws in webSockets) {
-                  ws.sink.add(data);
-                }
-                break;
-              case "set-cursor":
-                if (args[1] != clientIDs[ws]) break;
-                if (cursors[args[1]] == null) {
-                  cursors[args[1]] = ClientCursor(
-                    double.parse(args[2]),
-                    double.parse(args[3]),
-                    ws,
-                  );
-                  if (!config['silent']) {
-                    print('New cursor created. Client ID: ${args[1]}');
-                  }
-                } else {
-                  cursors[args[1]]!.x = double.parse(args[2]);
-                  cursors[args[1]]!.y = double.parse(args[3]);
-                }
-                for (var ws in webSockets) {
-                  ws.sink.add(data);
-                }
-                break;
-              case "token":
-                final tokenJSON = jsonDecode(args.sublist(1).join(" "));
-                final v = tokenJSON["version"];
-                if (v is! String) {
-                  kickWS(ws);
-                  break;
-                }
-                final id = tokenJSON["clientID"];
-                if (id is! String) {
-                  kickWS(ws);
-                  break;
-                }
-
-                if (clientIDList.contains(id)) {
-                  if (!config['silent']) {
-                    print("A user attempted to connect with duplicate ID");
-                  }
-                  kickWS(ws);
-                  break;
-                }
-                if (whitelist.isNotEmpty) {
-                  if (whitelist.contains(id)) {
-                    if (!config['silent']) {
-                      print("User with whitelisted ID: $id has joined.");
-                    }
-                  } else {
-                    print("User attempted to join with blocked ID");
-                    kickWS(ws);
-                    break;
-                  }
-                }
-
-                if (blacklist.isNotEmpty) {
-                  if (blacklist.contains(id)) {
-                    if (!config['silent']) {
-                      print("User attempted to join with a blocked ID");
-                      kickWS(ws);
-                      break;
-                    }
-                  }
-                }
-
-                if (config['block_uuid'] || uuidBl) {
-                  if (!config['silent']) {
-                    print('UUID blocking is enabled, validating ID...');
-                  }
-                  if (id.split('-').length == 5) {
-                    if (!config['silent']) print('Blocked ID $id');
-                    kickWS(ws);
-                    break;
-                  }
-                }
-
-                clientIDList.add(id);
-
-                if (versions.contains(fixVersion(v)) || (versions.isEmpty)) {
-                  versionMap[ws] = v;
-                  clientIDs[ws] = id;
-                  if (!config['silent']) {
-                    print("A new user has joined. ID: $id. Version: $v");
-                  }
-                } else if (versions.isNotEmpty) {
-                  if (!config['silent']) {
-                    print("A user has joined with incompatible version");
-                  }
-                  kickWS(ws);
-                } else {
-                  versionMap[ws] = v;
-                  clientIDs[ws] = id;
-                  if (!config['silent']) {
-                    print("A new user has joined. ID: $id. Version: $v");
-                  }
-                }
-                break;
-              default:
-                if (!config['silent']) {
-                  print(
-                    'Randomly got invalid packet $data. Sending to other clients.',
-                  );
-                }
-                for (var ws in webSockets) {
-                  ws.sink.add(data);
-                }
-                break;
+            final d = data.split('\n');
+            for (var dt in d) {
+              execPacket(dt, ws);
             }
           }
         },
@@ -479,11 +521,12 @@ Future<HttpServer> createServer() async {
         ); // Send cursors
       }
 
+      fixVersions();
       if (versions.isNotEmpty) {
         Future.delayed(Duration(milliseconds: int.parse(config['wait_time'])))
             .then(
           (v) {
-            if (!versions.contains(fixVersion(versionMap[ws] ?? ""))) {
+            if (!versions.contains(versionMap[ws])) {
               print("User kicked for no connection token sent");
               kickWS(ws); // Remove for invalid version
             } // Version check
@@ -521,7 +564,7 @@ Future<String> parseIP(String ip) async {
 void kickWS(WebSocketChannel ws) {
   final kickAllowed = config['kick-allowed'];
 
-  if (kickAllowed == 'true') {
+  if (kickAllowed) {
     removeWebsocket(ws);
     if (!config['silent']) print('A user has been kicked');
   } else {

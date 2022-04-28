@@ -37,9 +37,7 @@ Either `sandbox` or `level`, if not set then is asked in console.
 
 Sets size of level in `sandbox` mode, if not set then is asked in console.
 
-`--kick-allowed` flag:
-
-Setting this to `false` will disallow server to kick any members, default is `--kick-allowed=true`
+`--no-kick-allowed` flag:
 
 `--versions` flag:
 
@@ -61,6 +59,16 @@ Will block all IDs it thinks are UUIDs. This can be done to block people who are
 
 Will show in the console all packets coming from users. Defaults to false.
 
+`--no-packetpass` flag:
+
+Will prevent the server from sending unknown packets to all users. This can break compatibility with some mods.
+
+`--banned_packets` flag:
+The banned packets that will make the sender get kicked seoerated by `:`. This can be done to block specific functionality
+
+`--wait_time` flag:
+This can be how many milliseconds the timeout for not sending a `token` packet will be.
+
 # Does this server automatically open ports?
 
 No, it doesn't. You still have to open it and manage your firewall.
@@ -68,5 +76,5 @@ No, it doesn't. You still have to open it and manage your firewall.
 # Any other special configurations?
 
 You can create a `whitelist.txt` file to put in each line allowed IDs,
-You can create a `blacklist.txt` file to put in each line blocked IDs. If you put `@uuid` in there it will block UUIDs.
+You can create a `blacklist.txt` file to put in each line blocked IDs.
 You can also create a `versions.txt` file for versions to allow
