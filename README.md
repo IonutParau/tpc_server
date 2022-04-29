@@ -1,9 +1,9 @@
 <img 
-  align="left"
+  align="right"
   width="100"
   height="100"
-  src="https://picsum.photos/100/100"
->
+  src="https://raw.githubusercontent.com/IonutParau/thepuzzlecell/main/assets/images/logo.png"
+/>
 
 # The Puzzle Cell Server Handling System
 
