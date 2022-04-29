@@ -6,9 +6,10 @@ import 'package:dart_ipify/dart_ipify.dart';
 import 'package:shelf/shelf_io.dart' as sio;
 import 'package:shelf_web_socket/shelf_web_socket.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
+import 'command.dart';
 import 'grid.dart';
 
-final v = "2.0.0.2";
+final v = "2.0.0.3";
 
 // API docs
 /*
@@ -182,6 +183,10 @@ void main(List<String> arguments) async {
       'Server should be online, at ws://${server.address.address}:${server.port}/',
     );
   }
+
+  Future.delayed(Duration(milliseconds: 500)).then(
+    (v) => setupCommandIso(),
+  ); // Commands
 
   // Timer.periodic(Duration(seconds: 1), (timer) {
   //   stdout.write('> ');
