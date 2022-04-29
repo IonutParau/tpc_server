@@ -1,4 +1,5 @@
-[![a](https://raw.githubusercontent.com/IonutParau/thepuzzlecell/main/assets/images/logo.png)](https://github.com/IonutParau/thepuzzlecell) # The Puzzle Cell Server Handling System
+[![tpc](https://raw.githubusercontent.com/IonutParau/thepuzzlecell/main/assets/images/logo.png)](https://github.com/IonutParau/thepuzzlecell)
+# The Puzzle Cell Server Handling System
 
 This is the repository for the official server runtime
 
