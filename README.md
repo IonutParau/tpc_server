@@ -1,3 +1,10 @@
+<img 
+  align="right"
+  width="100"
+  height="100"
+  src="https://raw.githubusercontent.com/IonutParau/thepuzzlecell/main/assets/images/logo.png"
+/>
+
 # The Puzzle Cell Server Handling System
 
 This is the repository for the official server runtime
