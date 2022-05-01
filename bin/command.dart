@@ -3,7 +3,9 @@ import 'dart:io';
 import 'grid.dart';
 import 'main.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
-import 'dart:isolate'; // Pain
+import 'dart:isolate';
+
+import 'roles.dart'; // Pain
 
 void commandProcessorIsolate(SendPort commandPort) {
   while (true) {
@@ -125,5 +127,42 @@ void execCmd(String cmd, List<String> args) {
     }
   } else if (cmd == "exit") {
     exit(0);
+  } else if (cmd == "default-role") {
+    print(defaultRole.name);
+  } else if (cmd == "set-default-role") {
+    if (getRoleStr(args[1]) != null) defaultRole = getRoleStr(args[1])!;
+  } else if (cmd == "set-user-role") {
+    if (getRoleStr(args[2]) != null) roles[args[1]] = getRoleStr(args[2])!;
+  } else if (cmd == "user-roles") {
+    roles.forEach((id, role) {
+      print('$id - ${role.name}');
+    });
+  } else if (cmd == "help") {
+    print('set-cell <x> <y> <id> <rot> <heat>');
+    print('set-bg <x> <y> <id>');
+    print('toggle-wrap');
+    print('set-grid <code>');
+    print('kick-user <id>');
+    print('list-users');
+    print('list-cursors');
+    print('list-hovers');
+    print('direct-send <packet>');
+    print('exit');
+    print('default-role');
+    print('set-default-role <role>');
+    print('set-user-role <userID> <role>');
+    print('user-roles');
+  } else {
+    print("Unknown command $cmd");
   }
+}
+
+UserRole? getRoleStr(String role) {
+  for (var r in UserRole.values) {
+    if (r.name == role.toLowerCase()) {
+      return r;
+    }
+  }
+
+  return null;
 }
