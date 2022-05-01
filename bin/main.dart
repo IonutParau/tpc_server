@@ -8,6 +8,7 @@ import 'package:shelf_web_socket/shelf_web_socket.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'command.dart';
 import 'grid.dart';
+import 'roles.dart';
 
 final v = "2.0.0.3";
 
@@ -15,23 +16,23 @@ final v = "2.0.0.3";
 /*
 
 [Grid Management]
-- place <x> <y> <id> <rot> <heat> - Places cell
-- bg <x> <y> <bg> - Sets background
-- wrap - Toggles wrap mode
-- setinit - Sets initial state on the server
+> place <x> <y> <id> <rot> <heat> - Places cell
+> bg <x> <y> <bg> - Sets background
+> wrap - Toggles wrap mode
+> setinit <code> - Sets initial state on the server
 
 [Logic Management]
-- edtype <type> - Is the editor type wanted by the server
-- token <token JSON> - Server only, is how server knows of Client's ID and version.
+> edtype <type> - Is the editor type wanted by the server
+> token <token JSON> - Server only, is how server knows of Client's ID and version.
 
 [Hover Management]
-- new-hover <uuid> <x> <y> <id> <rot> - Creates new hover
-- set-hover <uuid> <x> <y> - Sets the new hover position
-- drop-hover <uuid> - Removes the hover
+> new-hover <uuid> <x> <y> <id> <rot> - Creates new hover
+> set-hover <uuid> <x> <y> - Sets the new hover position
+> drop-hover <uuid> - Removes the hover
 
 [Cursor Management]
-- set-cursor <uuid> <x> <y> - Sets cursor state
-- remove-cursor <uuid> - Removes the cursor (client only)
+> set-cursor <uuid> <x> <y> - Sets cursor state
+> remove-cursor <uuid> - Removes the cursor (client only)
 
 */
 
@@ -48,7 +49,7 @@ var uuidBl = false;
 
 late ArgResults config;
 
-void main(List<String> arguments) async {
+void getConfig(List<String> arguments) {
   final args = ArgParser();
   args.addOption('ip', defaultsTo: 'local');
   args.addOption('port', defaultsTo: '8080');
@@ -68,6 +69,11 @@ void main(List<String> arguments) async {
   args.addOption('height', defaultsTo: 'false');
 
   config = args.parse(arguments);
+}
+
+// Main function
+void main(List<String> arguments) async {
+  getConfig(arguments);
 
   if (config['banned_packets'] != "") {
     bannedPackets.addAll(config['banned_packets'].split(':'));
@@ -279,7 +285,17 @@ void execPacket(String data, WebSocketChannel ws) {
 
   final args = data.split(' ');
 
-  if (bannedPackets.contains(args.first)) {
+  final typeBasedPackets = [];
+
+  if (type == ServerType.level) {
+    typeBasedPackets.addAll([
+      "bg",
+      "wrap",
+    ]);
+  }
+
+  if (bannedPackets.contains(args.first) ||
+      typeBasedPackets.contains(args.first)) {
     print('Kicking user for sending banned packet ${args.first}');
     kickWS(ws);
     return;
@@ -287,6 +303,13 @@ void execPacket(String data, WebSocketChannel ws) {
 
   switch (args.first) {
     case "place":
+      if (args.length != 6) {
+        kickWS(ws);
+        break;
+      }
+      if (getRole(ws) == UserRole.guest) {
+        break;
+      }
       var x = int.parse(args[1]);
       var y = int.parse(args[2]);
       if (wrap) {
@@ -307,6 +330,13 @@ void execPacket(String data, WebSocketChannel ws) {
       }
       break;
     case "bg":
+      if (args.length != 4) {
+        kickWS(ws);
+        break;
+      }
+      if (getRole(ws) == UserRole.guest) {
+        break;
+      }
       var x = int.parse(args[1]);
       var y = int.parse(args[2]);
       if (wrap) {
@@ -326,15 +356,28 @@ void execPacket(String data, WebSocketChannel ws) {
       }
       break;
     case "wrap":
+      if (args.length != 1) {
+        kickWS(ws);
+        break;
+      }
+      if (getRole(ws) == UserRole.guest) {
+        break;
+      }
       wrap = !wrap;
       for (var ows in webSockets) {
-        if (ows != ws) {
-          ows.sink.add(data);
-        }
+        ows.sink.add(data);
       }
       gridCache = null;
       break;
     case "setinit":
+      if (args.length != 2) {
+        kickWS(ws);
+        break;
+      }
+      if (getRole(ws) == UserRole.guest) {
+        //ws.sink.add('drop-hover ${args[1]}');
+        break;
+      }
       if (gridCache != args[1]) {
         P2.decodeGrid(args[1]);
         for (var ws in webSockets) {
@@ -344,6 +387,13 @@ void execPacket(String data, WebSocketChannel ws) {
       }
       break;
     case "new-hover":
+      if (args.length != 6) {
+        kickWS(ws);
+        break;
+      }
+      if (getRole(ws) == UserRole.guest) {
+        break;
+      }
       hovers[args[1]] = CellHover(
         double.parse(args[2]),
         double.parse(args[3]),
@@ -357,6 +407,13 @@ void execPacket(String data, WebSocketChannel ws) {
       }
       break;
     case "set-hover":
+      if (args.length != 4) {
+        kickWS(ws);
+        break;
+      }
+      if (getRole(ws) == UserRole.guest) {
+        break;
+      }
       hovers[args[1]]!.x = double.parse(args[2]);
       hovers[args[1]]!.y = double.parse(args[3]);
       for (var ws in webSockets) {
@@ -364,12 +421,23 @@ void execPacket(String data, WebSocketChannel ws) {
       }
       break;
     case "drop-hover":
+      if (args.length != 2) {
+        kickWS(ws);
+        break;
+      }
+      if (getRole(ws) == UserRole.guest) {
+        break;
+      }
       hovers.remove(args[1]);
       for (var ws in webSockets) {
         ws.sink.add(data);
       }
       break;
     case "set-cursor":
+      if (args.length != 4) {
+        kickWS(ws);
+        break;
+      }
       if (args[1] != clientIDs[ws]) break;
       if (cursors[args[1]] == null) {
         cursors[args[1]] = ClientCursor(
@@ -424,9 +492,9 @@ void execPacket(String data, WebSocketChannel ws) {
         if (blacklist.contains(id)) {
           if (!config['silent']) {
             print("User attempted to join with a blocked ID");
-            kickWS(ws);
-            break;
           }
+          kickWS(ws);
+          break;
         }
       }
 
@@ -440,6 +508,8 @@ void execPacket(String data, WebSocketChannel ws) {
           break;
         }
       }
+
+      roles[id] = defaultRole;
 
       clientIDList.add(id);
 
