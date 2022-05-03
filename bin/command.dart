@@ -75,7 +75,7 @@ void execCmd(String cmd, List<String> args) {
     if (gridCache != args.join(" ")) {
       P2.decodeGrid(args.join(" "));
       for (var ws in webSockets) {
-        ws.sink.add(args.join(" "));
+        ws.sink.add('setinit ' + args.join(" "));
       }
       gridCache = args.join(" ");
     }
