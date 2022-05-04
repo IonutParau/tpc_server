@@ -469,7 +469,7 @@ void execPacket(String data, WebSocketChannel ws) {
         break;
       }
 
-      if (id.length > 500) {
+      if (id.length > 500 || id.contains("\n")) {
         kickWS(ws);
         break;
       }
