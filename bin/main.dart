@@ -469,6 +469,11 @@ void execPacket(String data, WebSocketChannel ws) {
         break;
       }
 
+      if (id.length > 500) {
+        kickWS(ws);
+        break;
+      }
+
       if (clientIDList.contains(id)) {
         if (!config['silent']) {
           print("A user attempted to connect with duplicate ID");
