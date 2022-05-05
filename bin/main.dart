@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:args/args.dart';
 import 'package:dart_ipify/dart_ipify.dart';
+import 'package:shelf/shelf.dart';
 import 'package:shelf/shelf_io.dart' as sio;
 import 'package:shelf_web_socket/shelf_web_socket.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
@@ -611,7 +612,7 @@ Future<HttpServer> createServer() async {
 
   final port = int.parse(config['port']); // Parse port
 
-  final server = await sio.serve(ws, ip, port); // Create server
+  final server = await sio.serve(serverThing(ws), ip, port); // Create server
 
   return server; // Return server
 }
@@ -641,4 +642,15 @@ void kickWS(WebSocketChannel ws) {
   } else {
     if (!config['silent']) print('A user wasnt kicked');
   }
+}
+
+FutureOr<Response> Function(Request rq) serverThing(
+    FutureOr<Response> Function(Request) wsHandler) {
+  return (Request rq) {
+    if (rq.method != "GET") {
+      return Future<Response>.value(Response.ok("Server exists"));
+    } else {
+      return wsHandler(rq);
+    }
+  };
 }
