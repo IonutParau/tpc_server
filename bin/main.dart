@@ -151,15 +151,10 @@ void main(List<String> arguments) async {
 
     makeGrid(int.parse(width), int.parse(height));
   } else {
-    print("Please input level code (P2 only)");
+    print("Please input level code (P2 or P3 only)");
     final code = stdin.readLineSync()!;
 
-    if (code.startsWith('P2;')) {
-      P2.decodeGrid(code);
-    } else {
-      print("Error: Not a P2 code");
-      return;
-    }
+    loadStr(code);
   }
 
   final server = await createServer();
@@ -370,16 +365,12 @@ void execPacket(String data, WebSocketChannel ws) {
       gridCache = null;
       break;
     case "setinit":
-      if (args.length != 2) {
-        kickWS(ws);
-        break;
-      }
       if (getRole(ws) == UserRole.guest) {
         //ws.sink.add('drop-hover ${args[1]}');
         break;
       }
       if (gridCache != args[1]) {
-        P2.decodeGrid(args[1]);
+        loadStr(args[1]);
         for (var ws in webSockets) {
           ws.sink.add(data);
         }
@@ -578,7 +569,7 @@ Future<HttpServer> createServer() async {
       );
 
       // Send grid
-      gridCache ??= P2.encodeGrid(); // Speeeeeed
+      gridCache ??= P3.encodeGrid(); // Speeeeeed
       ws.sink.add('grid $gridCache'); // Send to client
 
       if (type == ServerType.level) {
