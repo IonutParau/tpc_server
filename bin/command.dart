@@ -128,14 +128,14 @@ void execCmd(String cmd, List<String> args) {
   } else if (cmd == "exit") {
     exit(0);
   } else if (cmd == "default-role") {
-    print(defaultRole.name);
+    print(defaultRole.toString().replaceAll("UserRole.", ""));
   } else if (cmd == "set-default-role") {
-    if (getRoleStr(args[1]) != null) defaultRole = getRoleStr(args[1])!;
+    if (getRoleStr(args[0]) != null) defaultRole = getRoleStr(args[0])!;
   } else if (cmd == "set-user-role") {
-    if (getRoleStr(args[2]) != null) roles[args[1]] = getRoleStr(args[2])!;
+    if (getRoleStr(args[1]) != null) roles[args[0]] = getRoleStr(args[1])!;
   } else if (cmd == "user-roles") {
     roles.forEach((id, role) {
-      print('$id - ${role.name}');
+      print('$id - ${role.toString().replaceAll("UserRole.", "")}');
     });
   } else if (cmd == "help") {
     print('set-cell <x> <y> <id> <rot> <heat>');
@@ -159,7 +159,7 @@ void execCmd(String cmd, List<String> args) {
 
 UserRole? getRoleStr(String role) {
   for (var r in UserRole.values) {
-    if (r.name == role.toLowerCase()) {
+    if (r.toString() == ("UserRole." + role.toLowerCase())) {
       return r;
     }
   }
