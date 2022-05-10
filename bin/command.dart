@@ -152,6 +152,20 @@ void execCmd(String cmd, List<String> args) {
     print('set-default-role <role>');
     print('set-user-role <userID> <role>');
     print('user-roles');
+    print('ip-ban <userID> - Bans the IP of the user and also kicks them');
+  } else if (cmd == 'ip-ban') {
+    WebSocketChannel? user;
+    for (var ws in webSockets) {
+      if (clientIDs[ws] == args[0]) {
+        user = ws;
+      }
+    }
+    if (user == null) {
+      print("Can't find user of ID ${args[0]}");
+    } else {
+      bannedIps.add(ipMap[user] ?? "");
+      kickWS(user);
+    }
   } else {
     print("Unknown command $cmd");
   }

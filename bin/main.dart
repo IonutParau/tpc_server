@@ -272,6 +272,10 @@ void removeWebsocket(WebSocketChannel ws) {
 
 Map<WebSocketChannel, String> versionMap = {};
 
+String? latestIP = "";
+final ipMap = <WebSocketChannel, String>{};
+final bannedIps = <String>{};
+
 void execPacket(String data, WebSocketChannel ws) {
   if (!webSockets.contains(ws)) return;
 
@@ -556,6 +560,10 @@ Future<HttpServer> createServer() async {
   final ws = webSocketHandler(
     (WebSocketChannel ws) {
       webSockets.add(ws);
+      if (latestIP != null) {
+        ipMap[ws] = latestIP!;
+        latestIP = null;
+      }
       ws.stream.listen(
         (data) {
           if (data is String) {
@@ -647,6 +655,14 @@ void kickWS(WebSocketChannel ws) {
 FutureOr<Response> Function(Request rq) serverThing(
     FutureOr<Response> Function(Request) wsHandler) {
   return (Request rq) {
+    final ip = rq.headers['X-Forwarded-For'];
+
+    if (bannedIps.contains(ip)) {
+      return Future<Response>.value(Response.forbidden("IP has been banned"));
+    }
+
+    latestIP = ip;
+
     if (rq.method != "GET") {
       return Future<Response>.value(Response.ok("Server exists"));
     } else {
