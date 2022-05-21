@@ -16,13 +16,18 @@ void commandProcessorIsolate(SendPort commandPort) {
 
 // Launch command reader on seperate thread
 void setupCommandIso() {
+  print("Setting up seperate command thread...");
   final commandPort = ReceivePort();
 
   Isolate.spawn(
     commandProcessorIsolate,
     commandPort.sendPort,
     debugName: 'Command Processor Isolate',
-  );
+  ).then((iso) {
+    print(
+      "Command system should be setup properly. Type help for the list of commands!",
+    );
+  });
 
   commandPort.listen(
     (message) {

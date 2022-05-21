@@ -11,7 +11,7 @@ import 'command.dart';
 import 'grid.dart';
 import 'roles.dart';
 
-final v = "2.0.0.3";
+final v = "2.0.1.0";
 
 // API docs
 /*
@@ -72,6 +72,9 @@ void getConfig(List<String> arguments) {
   config = args.parse(arguments);
 }
 
+late String ip;
+late int port;
+
 // Main function
 void main(List<String> arguments) async {
   getConfig(arguments);
@@ -124,6 +127,7 @@ void main(List<String> arguments) async {
 
   if (serverType == "false") {
     print("Please input server type (sandbox [1]/ level [2])");
+    stdout.write("Server Type > ");
     serverType = stdin.readLineSync();
   }
 
@@ -142,44 +146,84 @@ void main(List<String> arguments) async {
 
     if (width == "false") {
       print("Please input grid width");
+      stdout.write("Width > ");
       width = stdin.readLineSync()!;
     }
 
     if (height == "false") {
       print("Please input grid height");
+      stdout.write("Height > ");
       height = stdin.readLineSync()!;
     }
 
     makeGrid(int.parse(width), int.parse(height));
   } else {
     print("Please input level code (P2 or P3 only)");
+    stdout.write("Level code > ");
     final code = stdin.readLineSync()!;
 
     loadStr(code);
   }
 
-  final server = await createServer();
+  var ip = await parseIP(config['ip']!); // Parse IP
+
+  var port = int.parse(config['port']); // Parse port
+
+  if (arguments.isEmpty) {
+    print("[ IP & Port Config ]");
+    print(
+      "Since there were no arguments passed in, the server has detected that you ran the executable by itself.",
+    );
+    print(
+      "To avoid a bad experience, the server is now prompting you to choose the IP and port",
+    );
+    print("Options:");
+    print(
+      "local - This puts it on 127.0.0.1, which is the local host IP. If the ip is local, only your computer can connect to it!",
+    );
+    print(
+      "zero - This puts it on 0.0.0.0, meaning any user connected to your WiFi or Ethernet will be able to join. Also, any person with your IP can also connect, making this ideal for hosting a server for everyone to join",
+    );
+    stdout.write("IP > ");
+    ip = await parseIP(stdin.readLineSync()!);
+
+    print("Now, on to the port. The port must be a 4-digit number.");
+    print(
+      "If you don't input a valid number, it will use the default port 8080",
+    );
+    print(
+      "Due to many other types of programs using 8080, since the port has to be different from all other apps using the network, we recommend using something other than the default. You can choose something random, like 5283",
+    );
+
+    stdout.write('Port > ');
+
+    port = int.tryParse(stdin.readLineSync()!) ?? 8080;
+  }
+
+  final server = await createServer(ip, port);
 
   if (config['silent']) {
     print('Server should be online');
   } else {
-    if (config['ip'] == "local" || config['ip'] == "127.0.0.1") {
-      print(
-        "You have ran this server on the localhost IP address constant (127.0.0.1 [localhost])",
-      );
-      print(
-        "This means only you can connect to the server, as the localhost IP address only allows the computer it is hosted on to access it",
-      );
-    } else if (config['ip'] == 'zero' || config['ip'] == '0.0.0.0') {
-      print("You have ran this server on IP 0.0.0.0");
-      print(
-        "This means only people connected through an ethernet wire can connect to it",
-      );
-    } else if (config['ip'] == 'self') {
-      print(
-        "WARNING: In 7 seconds it will say at what IP the server is hosted. You have no configured it to be local or zero, meaning it will display your actual IP",
-      );
-      await Future.delayed(Duration(seconds: 7));
+    if (arguments.isNotEmpty) {
+      if (ip == "local" || ip == "127.0.0.1") {
+        print(
+          "You have ran this server on the localhost IP address constant (127.0.0.1 [localhost])",
+        );
+        print(
+          "This means only you can connect to the server, as the localhost IP address only allows the computer it is hosted on to access it",
+        );
+      } else if (ip == 'zero' || ip == '0.0.0.0') {
+        print("You have ran this server on IP 0.0.0.0");
+        print(
+          "This means only people connected through an ethernet wire can connect to it",
+        );
+      } else if (ip == 'self') {
+        print(
+          "WARNING: In 7 seconds it will say at what IP the server is hosted. You have no configured it to be local or zero, meaning it will display your actual IP",
+        );
+        await Future.delayed(Duration(seconds: 7));
+      }
     }
     print(
       'Server should be online, at ws://${server.address.address}:${server.port}/',
@@ -557,7 +601,7 @@ void execPacket(String data, WebSocketChannel ws) {
   }
 }
 
-Future<HttpServer> createServer() async {
+Future<HttpServer> createServer(String ip, int port) async {
   final ws = webSocketHandler(
     (WebSocketChannel ws) {
       webSockets.add(ws);
@@ -616,10 +660,6 @@ Future<HttpServer> createServer() async {
       } // Version checking
     },
   );
-
-  final ip = await parseIP(config['ip']!); // Parse IP
-
-  final port = int.parse(config['port']); // Parse port
 
   final server = await sio.serve(serverThing(ws), ip, port); // Create server
 
