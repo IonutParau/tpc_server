@@ -183,7 +183,7 @@ void main(List<String> arguments) async {
       "local - This puts it on 127.0.0.1, which is the local host IP. If the ip is local, only your computer can connect to it!",
     );
     print(
-      "zero - This puts it on 0.0.0.0, meaning any user connected to your WiFi or Ethernet will be able to join. Also, any person with your IP can also connect, making this ideal for hosting a server for everyone to join",
+      "zero - This puts it on 0.0.0.0, meaning any user connected to your WiFi or Ethernet will be able to join. Also, any person with your IP address can also connect, making this ideal for hosting a server for everyone to join",
     );
     stdout.write("IP > ");
     ip = await parseIP(stdin.readLineSync()!);
