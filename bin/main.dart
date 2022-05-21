@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:args/args.dart';
+import 'package:crypto/crypto.dart';
 import 'package:dart_ipify/dart_ipify.dart';
 import 'package:shelf/shelf.dart';
 import 'package:shelf/shelf_io.dart' as sio;
@@ -606,7 +607,7 @@ Future<HttpServer> createServer(String ip, int port) async {
     (WebSocketChannel ws) {
       webSockets.add(ws);
       if (latestIP != null) {
-        ipMap[ws] = latestIP!;
+        ipMap[ws] = sha256.convert(utf8.encode(latestIP!)).toString();
         latestIP = null;
       }
       ws.stream.listen(
@@ -698,8 +699,13 @@ FutureOr<Response> Function(Request rq) serverThing(
   return (Request rq) {
     final ip = rq.headers['X-Forwarded-For'];
 
-    if (bannedIps.contains(ip)) {
-      return Future<Response>.value(Response.forbidden("IP has been banned"));
+    // IP would be null if this was from the host computer
+    if (ip != null) {
+      final ipHash = sha256.convert(utf8.encode(ip)).toString();
+
+      if (bannedIps.contains(ipHash)) {
+        return Future<Response>.value(Response.forbidden("IP has been banned"));
+      }
     }
 
     latestIP = ip;
