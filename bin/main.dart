@@ -322,6 +322,7 @@ void execPacket(String data, WebSocketChannel ws) {
       final old = grid[x][y].copy;
       grid[x][y].id = args[3];
       grid[x][y].rot = int.parse(args[4]);
+      grid[x][y].data = parseCellDataStr(args[5]);
       if (old != grid[x][y]) {
         for (var ws in webSockets) {
           ws.sink.add(data);

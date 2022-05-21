@@ -42,14 +42,14 @@ void execCmd(String cmd, List<String> args) {
     final y = int.parse(args[1]);
     final id = args[2];
     final rot = int.parse(args[3]);
-    final heat = int.tryParse(args[4]) ?? 0;
+    final data = parseCellDataStr(args[4]);
 
-    print("Placed cell at $x,$y to ID: $id ROT: $rot HEAT: $heat");
+    print("Placed cell at $x,$y to ID: $id ROT: $rot DATA: $data");
 
     grid[x][y].id = id;
     grid[x][y].rot = rot;
     for (var ws in webSockets) {
-      ws.sink.add('place $x $y $id $rot $heat');
+      ws.sink.add('place $x $y $id $rot ${args[4]}');
     }
     gridCache = null;
   } else if (cmd == "set-bg") {
@@ -138,7 +138,7 @@ void execCmd(String cmd, List<String> args) {
       print('$id - ${role.toString().replaceAll("UserRole.", "")}');
     });
   } else if (cmd == "help") {
-    print('set-cell <x> <y> <id> <rot> <heat>');
+    print('set-cell <x> <y> <id> <rot> <cell_data_string>');
     print('set-bg <x> <y> <id>');
     print('toggle-wrap');
     print('set-grid <code>');

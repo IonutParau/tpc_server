@@ -29,6 +29,29 @@ class Cell {
   int get hashCode => (rot * 4 + bg.hashCode + 20000 + rot.hashCode + 10000);
 }
 
+Map<String, dynamic> parseCellDataStr(String str) {
+  if (num.tryParse(str) != null) {
+    return {"heat": num.parse(str)};
+  }
+  final pairs = str.split(':');
+  final m = <String, dynamic>{};
+
+  for (var pair in pairs) {
+    final segs = pair.split('=');
+    final key = segs[0];
+
+    if (num.tryParse(segs[1]) != null) {
+      m[key] = num.parse(segs[1]);
+    } else if (segs[1] == "true" || segs[1] == "false") {
+      m[key] = (segs[1] == "true");
+    } else {
+      m[key] = segs[1];
+    }
+  }
+
+  return m;
+}
+
 late List<List<Cell>> grid;
 
 bool wrap = false;
