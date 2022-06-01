@@ -12,7 +12,7 @@ import 'command.dart';
 import 'grid.dart';
 import 'roles.dart';
 
-final v = "2.0.1.0";
+final v = "2.0.1.1";
 
 // API docs
 /*

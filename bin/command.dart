@@ -85,7 +85,7 @@ void execCmd(String cmd, List<String> args) {
       gridCache = args.join(" ");
     }
     print("Sucessfully changed grid");
-  } else if (cmd == "kick-user") {
+  } else if (cmd == "kick-user" || cmd == "kick") {
     WebSocketChannel? user;
     for (var ws in webSockets) {
       if (clientIDs[ws] == args[0]) {
@@ -124,13 +124,13 @@ void execCmd(String cmd, List<String> args) {
         );
       },
     );
-  } else if (cmd == "direct-send") {
+  } else if (cmd == "direct-send" || cmd == "send") {
     final packet = args.join(" ");
 
     for (var ws in webSockets) {
       ws.sink.add(packet);
     }
-  } else if (cmd == "exit") {
+  } else if (cmd == "exit" || cmd == "e") {
     exit(0);
   } else if (cmd == "default-role") {
     print(defaultRole.toString().replaceAll("UserRole.", ""));
@@ -142,7 +142,7 @@ void execCmd(String cmd, List<String> args) {
     roles.forEach((id, role) {
       print('$id - ${role.toString().replaceAll("UserRole.", "")}');
     });
-  } else if (cmd == "help") {
+  } else if (cmd == "help" || cmd == "h") {
     print('set-cell <x> <y> <id> <rot> <cell_data_string>');
     print('set-bg <x> <y> <id>');
     print('toggle-wrap');
@@ -157,8 +157,8 @@ void execCmd(String cmd, List<String> args) {
     print('set-default-role <role>');
     print('set-user-role <userID> <role>');
     print('user-roles');
-    print('ip-ban <userID> - Bans the IP of the user and also kicks them');
-  } else if (cmd == 'ip-ban') {
+    print('ban <userID> - Bans the IP of the user and also kicks them');
+  } else if (cmd == 'ip-ban' || cmd == "ban") {
     WebSocketChannel? user;
     for (var ws in webSockets) {
       if (clientIDs[ws] == args[0]) {
