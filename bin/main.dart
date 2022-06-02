@@ -60,7 +60,7 @@ void getConfig(List<String> arguments) {
   args.addOption('blacklist', defaultsTo: '');
   args.addOption('banned_packets', defaultsTo: '');
   args.addOption('wait_time', defaultsTo: '1000');
-  args.addFlag('kick-allowed');
+  args.addFlag('kick-allowed', defaultsTo: true, negatable: true);
   args.addFlag('silent', negatable: false);
   args.addFlag('block_uuid', negatable: false);
   args.addFlag('log', negatable: false);
