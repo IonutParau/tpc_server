@@ -8,6 +8,7 @@ environment:
 
 dependencies:
   args: ^2.3.0
+  base_x: ^2.0.0
   crypto: ^3.0.2
   dart_ipify: ^1.1.1
   shelf: ^1.2.0

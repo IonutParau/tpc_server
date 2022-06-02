@@ -12,7 +12,7 @@ import 'command.dart';
 import 'grid.dart';
 import 'roles.dart';
 
-final v = "2.0.1.1";
+final v = "2.0.2.0";
 
 // API docs
 /*
@@ -132,10 +132,7 @@ void main(List<String> arguments) async {
     serverType = stdin.readLineSync();
   }
 
-  if (serverType != "sandbox" &&
-      serverType != "level" &&
-      serverType != "1" &&
-      serverType != "2") {
+  if (serverType != "sandbox" && serverType != "level" && serverType != "1" && serverType != "2") {
     print("Invalid server type");
     return;
   }
@@ -159,7 +156,7 @@ void main(List<String> arguments) async {
 
     makeGrid(int.parse(width), int.parse(height));
   } else {
-    print("Please input level code (P2 or P3 only)");
+    print("Please input level code (P2, P3 or P4 only)");
     stdout.write("Level code > ");
     final code = stdin.readLineSync()!;
 
@@ -339,8 +336,7 @@ void execPacket(String data, WebSocketChannel ws) {
     ]);
   }
 
-  if (bannedPackets.contains(args.first) ||
-      typeBasedPackets.contains(args.first)) {
+  if (bannedPackets.contains(args.first) || typeBasedPackets.contains(args.first)) {
     print('Kicking user for sending banned packet ${args.first}');
     kickWS(ws);
     return;
@@ -624,7 +620,7 @@ Future<HttpServer> createServer(String ip, int port) async {
       );
 
       // Send grid
-      gridCache ??= P3.encodeGrid(); // Speeeeeed
+      gridCache ??= P4.encodeGrid(); // Speeeeeed
       ws.sink.add('grid $gridCache'); // Send to client
 
       if (type == ServerType.level) {
@@ -649,8 +645,7 @@ Future<HttpServer> createServer(String ip, int port) async {
 
       fixVersions();
       if (versions.isNotEmpty) {
-        Future.delayed(Duration(milliseconds: int.parse(config['wait_time'])))
-            .then(
+        Future.delayed(Duration(milliseconds: int.parse(config['wait_time']))).then(
           (v) {
             if (!versions.contains(versionMap[ws])) {
               print("User kicked for no connection token sent");
@@ -694,8 +689,7 @@ void kickWS(WebSocketChannel ws) {
   }
 }
 
-FutureOr<Response> Function(Request rq) serverThing(
-    FutureOr<Response> Function(Request) wsHandler) {
+FutureOr<Response> Function(Request rq) serverThing(FutureOr<Response> Function(Request) wsHandler) {
   return (Request rq) {
     final ip = rq.headers['X-Forwarded-For'];
 
