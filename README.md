@@ -23,9 +23,8 @@ You can run a server by running the executable or the source code, but you can a
 
 Specifies IP to be used by server, default is `--ip=local`
 
-- `self`: will automatically get your public IP using Ipify.
 - `local`: equals to `localhost` or `127.0.0.1`, means it will be only accessable by your computer and no other.
-- `zero`: equlas to `0.0.0.0` and opens your server for LAN, meaning the computers in the network have to be physically connected using Ethernet or use the same WiFi network.
+- `zero`: equlas to `0.0.0.0` and opens your server for LAN, meaning the computers in the network have to be physically connected using Ethernet or use the same WiFi network. Also, if the port you have selected is a public one, anyone with your IP will be able to connect as well, they just gotta replace the 0.0.0.0 part with your IP.
 - any other option will tell server to run on specified IP address.
 
 `--port` flag:
