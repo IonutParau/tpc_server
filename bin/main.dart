@@ -22,6 +22,7 @@ final v = "Release Beta 1";
 > bg <x> <y> <bg> - Sets background
 > wrap - Toggles wrap mode
 > setinit <code> - Sets initial state on the server
+> toggle-invis <x> <y>
 
 [Logic Management]
 > edtype <type> - Is the editor type wanted by the server
@@ -581,6 +582,18 @@ void execPacket(String data, WebSocketChannel ws) {
         if (!config['silent']) {
           print("A new user has joined. ID: $id. Version: $v");
         }
+      }
+      break;
+    case "toggle-invis":
+      if (args.length != 3) {
+        kickWS(ws);
+        break;
+      }
+      final x = int.parse(args[1]);
+      final y = int.parse(args[2]);
+
+      if (insideGrid(x, y)) {
+        grid[x][y].invisible = !grid[x][y].invisible;
       }
       break;
     default:

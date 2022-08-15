@@ -12,17 +12,19 @@ class Cell {
   int lifespan = 0;
   Map<String, dynamic> data;
   List<String> tags;
+  bool invisible;
 
-  Cell(this.id, this.rot, this.bg, this.lifespan, this.data, this.tags);
+  Cell(this.id, this.rot, this.bg, this.lifespan, this.data, this.tags, this.invisible);
 
   Cell get copy {
-    return Cell(id, rot, bg, lifespan, Map.from(data), List.from(tags));
+    return Cell(id, rot, bg, lifespan, Map.from(data), List.from(tags), invisible);
   }
 
   @override
   bool operator ==(Object other) {
     if (other is Cell) {
-      return (id == other.id && rot == other.rot && bg == other.bg);
+      //return (id == other.id && rot == other.rot && bg == other.bg && invisible == other.invisible);
+      return true;
     } else {
       return false;
     }
@@ -125,7 +127,7 @@ void makeGrid(int width, int height) {
   for (var x = 0; x < width; x++) {
     grid.add([]);
     for (var y = 0; y < height; y++) {
-      grid.last.add(Cell("empty", 0, "empty", 0, {}, []));
+      grid.last.add(Cell("empty", 0, "empty", 0, {}, [], false));
     }
   }
 }
@@ -157,7 +159,7 @@ class P2 {
 
   static Cell decodeCell(String cell, List<String> cellTable) {
     final n = decodeNum(cell, valueString);
-    final c = Cell(cellTable[n ~/ 4], n % 4, "empty", 0, {}, []);
+    final c = Cell(cellTable[n ~/ 4], n % 4, "empty", 0, {}, [], false);
 
     return c;
   }
@@ -368,191 +370,7 @@ class P3Cell {
   P3Cell(this.id, this.x, this.y, this.rot, this.data, this.tags, this.bg, this.lifespan);
 
   void place() {
-    grid[x][y] = Cell(id, rot, bg, lifespan, data, tags.toList());
-  }
-}
-
-class P4 {
-  static final String valueString = r"0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!$%&+-.=?^{}";
-
-  static final String base = r"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_.!~/?:@&=+$,#()[]{}%'|^";
-
-  static final baseEncoder = BaseXCodec(base);
-
-  static String header = "P4;";
-
-  static String encodeCell(int x, int y) {
-    final c = grid[x][y];
-    final bg = c.bg;
-
-    final m = {
-      "id": c.id,
-      "rot": c.rot,
-      "data": c.data,
-      "tags": c.tags,
-      "bg": bg,
-      "lifespan": c.lifespan,
-    };
-
-    return encodeValue(m);
-  }
-
-  static void setCell(String str, int x, int y) {
-    final m = decodeValue(str) as Map<String, dynamic>;
-
-    final c = Cell("", 0, "", 0, {}, []);
-    c.rot = m['rot'];
-    if (m['data'] is Map<String, dynamic>) c.data = m['data']; // If it was empty, it would default to list lmao
-    c.tags = m['tags'];
-    c.id = m['id'];
-    c.lifespan = m['lifespan'];
-    c.bg = m['bg'];
-
-    grid[x][y] = c;
-  }
-
-  static String encodeGrid({String title = "", String description = ""}) {
-    print("Encoding with base ${base.length}");
-    var str = header + '$title;$description;'; // Header, title and description
-
-    str += '${encodeNum(grid.length, valueString)};';
-    str += '${encodeNum(grid.first.length, valueString)};';
-
-    final cellDataList = [];
-
-    loopGrid(
-      (cell, x, y) {
-        final cstr = encodeCell(x, y);
-        if (cellDataList.isNotEmpty) {
-          final m = decodeValue(cellDataList.last);
-          final c = m['count'] ?? 1;
-          m.remove("count");
-          if (encodeValue(m) == cstr) {
-            m['count'] = c + 1;
-            cellDataList.last = encodeValue(m);
-            return;
-          }
-        }
-        cellDataList.add(cstr);
-      },
-    );
-
-    final cellDataStr = baseEncoder.encode(
-      Uint8List.fromList(zlib.encode(
-        utf8.encode(
-          cellDataList.join(''),
-        ),
-      )),
-    );
-
-    str += '$cellDataStr;';
-
-    final props = {};
-
-    if (wrap) props['W'] = true;
-
-    str += encodeValue(props);
-
-    return str;
-  }
-
-  static void decodeString(String str) {
-    str.replaceAll('\n', '');
-    final segs = str.split(';');
-
-    final width = decodeNum(segs[3], valueString);
-    final height = decodeNum(segs[4], valueString);
-
-    makeGrid(width, height);
-
-    final rawCellDataList = fancySplit(utf8.decode(zlib.decode(baseEncoder.decode(segs[5])).toList()), '');
-
-    while (rawCellDataList.first == "") {
-      rawCellDataList.removeAt(0);
-    }
-    while (rawCellDataList.last == "") {
-      rawCellDataList.removeLast();
-    }
-
-    final cellDataList = [];
-
-    for (var cellData in rawCellDataList) {
-      final m = decodeValue(cellData);
-
-      if (m['count'] != null) {
-        final c = int.parse(m['count']);
-        for (var i = 0; i < c; i++) {
-          cellDataList.add(cellData);
-        }
-      } else {
-        cellDataList.add(cellData);
-      }
-    }
-
-    var i = 0;
-
-    loopGrid(
-      (cell, x, y) {
-        setCell(rawCellDataList[i], x, y);
-        i++;
-      },
-    );
-
-    final props = decodeValue(segs[6]);
-    if (props is Map<String, dynamic>) {
-      if (props['W'] != null) wrap = props['W']!;
-    }
-  }
-
-  static String encodeValue(dynamic value) {
-    if (value is List || value is Set) {
-      return '(' + value.map<String>((e) => encodeValue(e)).join(":") + ')';
-    } else if (value is Map<String, dynamic>) {
-      final keys = [];
-
-      value.forEach((key, value) {
-        keys.add('$key=${encodeValue(value)}');
-      });
-
-      return '(${keys.join(':')})';
-    }
-
-    return value.toString();
-  }
-
-  static dynamic decodeValue(String str) {
-    if (str == '{}') return <String>{};
-    if (str == '()') return <String>{};
-    if (int.tryParse(str) != null) {
-      return int.parse(str);
-    } else if (double.tryParse(str) != null) {
-      return double.parse(str);
-    } else if (str == "true" || str == "false") {
-      return str == "true";
-    } else if (str.startsWith('(') && str.endsWith(')')) {
-      final s = str.substring(1, str.length - 1);
-
-      if (s.contains('=')) {
-        // It is a map, decode it as a map
-        final map = <String, dynamic>{};
-
-        final parts = fancySplit(s, ':');
-
-        for (var part in parts) {
-          final kv = fancySplit(part, '=');
-          final k = kv[0];
-          final v = decodeValue(kv[1]);
-
-          map[k] = v;
-        }
-        return map;
-      } else {
-        // It is a list, decode it as a list
-        return fancySplit(s, ':').map<dynamic>((e) => decodeValue(e)).toSet();
-      }
-    }
-
-    return str;
+    grid[x][y] = Cell(id, rot, bg, lifespan, data, tags.toList(), false);
   }
 }
 
@@ -580,4 +398,206 @@ List<String> fancySplit(String thing, String sep) {
   }
 
   return things;
+}
+
+bool stringContainsAtRoot(String thing, String char) {
+  final chars = thing.split("");
+  var depth = 0;
+
+  for (var c in chars) {
+    if (c == "(") {
+      depth++;
+    } else if (c == ")") {
+      depth--;
+    }
+    if (depth == 0 && (c == char || char == "")) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+class P4 {
+  static final String valueString = r"0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!$%&+-.=?^{}";
+
+  static final String base = r"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_.!~/?:@&=+$,#()[]{}%'|^";
+
+  static final baseEncoder = BaseXCodec(base);
+
+  static String header = "P4;";
+
+  static String encodeCell(int x, int y) {
+    final c = grid[x][y];
+    final bg = c.bg;
+
+    final m = {
+      "id": c.id,
+      "rot": c.rot,
+      "data": c.data,
+      "tags": c.tags,
+      "bg": bg,
+      "lifespan": c.lifespan,
+      "invisible": c.invisible,
+    };
+
+    return encodeValue(m);
+  }
+
+  static void setCell(String str, int x, int y) {
+    final m = decodeValue(str) as Map<String, dynamic>;
+
+    final c = Cell("", 0, "", 0, {}, [], false);
+    c.rot = m['rot'];
+    if (m['data'] is Map<String, dynamic>) c.data = m['data']; // If it was empty, it would default to list lmao
+    c.tags = m['tags'];
+    c.id = m['id'];
+    c.lifespan = m['lifespan'];
+    c.invisible = m['invisible'] ?? false;
+    final bg = m['bg'];
+
+    c.bg = bg;
+    grid[x][y] = c;
+  }
+
+  static String encodeGrid({String title = "", String description = ""}) {
+    var str = header + '$title;$description;'; // Header, title and description
+
+    str += '${encodeNum(grid.length, valueString)};';
+    str += '${encodeNum(grid.first.length, valueString)};';
+
+    final cellDataList = [];
+
+    loopGrid(
+      (cell, x, y) {
+        final cstr = encodeCell(x, y);
+        if (cellDataList.isNotEmpty) {
+          final m = decodeValue(cellDataList.last);
+          final c = m['count'];
+
+          if (encodeValue(m['cell']) == cstr) {
+            m['count'] = c + 1;
+            cellDataList.last = encodeValue(m);
+            return;
+          }
+        }
+        cellDataList.add(encodeValue({"cell": cstr, "count": 1}));
+      },
+    );
+
+    final cellDataStr = baseEncoder.encode(
+      Uint8List.fromList(zlib.encode(
+        utf8.encode(
+          cellDataList.join(''),
+        ),
+      )),
+    );
+
+    str += '$cellDataStr;';
+
+    final props = {};
+
+    if (wrap) props['W'] = true;
+
+    str += '${encodeValue(props)};';
+
+    return str;
+  }
+
+  static void decodeString(String str) {
+    str.replaceAll('\n', '');
+    final segs = str.split(';');
+
+    final width = decodeNum(segs[3], valueString);
+    final height = decodeNum(segs[4], valueString);
+    makeGrid(width, height);
+
+    final rawCellDataList = fancySplit(utf8.decode(zlib.decode(baseEncoder.decode(segs[5])).toList()), '');
+
+    while (rawCellDataList.first == "") {
+      rawCellDataList.removeAt(0);
+    }
+    while (rawCellDataList.last == "") {
+      rawCellDataList.removeLast();
+    }
+
+    final cellDataList = [];
+
+    for (var cellData in rawCellDataList) {
+      final m = decodeValue(cellData);
+
+      final c = m['count'] ?? 1;
+
+      for (var i = 0; i < c; i++) {
+        cellDataList.add(encodeValue(m['cell']));
+      }
+    }
+
+    var i = 0;
+
+    loopGrid(
+      (cell, x, y) {
+        if (cellDataList.length > i) {
+          setCell(cellDataList[i], x, y);
+        }
+        i++;
+      },
+    );
+
+    final props = decodeValue(segs[6]);
+  }
+
+  static String encodeValue(dynamic value) {
+    if (value is Set) {
+      value = value.toList();
+    }
+    if (value is List) {
+      return '(' + value.map<String>((e) => encodeValue(e)).join(":") + ')';
+    } else if (value is Map) {
+      final keys = value.isEmpty ? ["="] : [];
+
+      value.forEach((key, value) {
+        keys.add('$key=${encodeValue(value)}');
+      });
+
+      return '(${keys.join(':')})';
+    }
+
+    return value.toString();
+  }
+
+  static dynamic decodeValue(String str) {
+    if (str == '{}') return <String>{};
+    if (str == '()') return <String>{};
+    if (int.tryParse(str) != null) {
+      return int.parse(str);
+    } else if (double.tryParse(str) != null) {
+      return double.parse(str);
+    } else if (str == "true" || str == "false") {
+      return str == "true";
+    } else if (str.startsWith('(') && str.endsWith(')')) {
+      final s = str.substring(1, str.length - 1);
+
+      if (stringContainsAtRoot(s, '=')) {
+        // It is a map, decode it as a map
+        final map = <String, dynamic>{};
+
+        final parts = fancySplit(s, ':');
+
+        for (var part in parts) {
+          final kv = fancySplit(part, '=');
+          final k = kv[0];
+          final v = decodeValue(kv[1]);
+
+          map[k] = v;
+        }
+        return map;
+      } else {
+        // It is a list, decode it as a list
+        return fancySplit(s, ':').map<dynamic>((e) => decodeValue(e)).toSet();
+      }
+    }
+
+    return str;
+  }
 }
