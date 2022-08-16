@@ -426,7 +426,7 @@ void execPacket(String data, WebSocketChannel ws) {
       }
       break;
     case "new-hover":
-      if (args.length != 6) {
+      if (args.length <= 6) {
         kickWS(ws);
         break;
       }
