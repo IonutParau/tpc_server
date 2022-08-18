@@ -4,6 +4,7 @@ import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:base_x/base_x.dart';
+import 'package:quiver/collection.dart';
 
 class Cell {
   String id;
@@ -23,8 +24,7 @@ class Cell {
   @override
   bool operator ==(Object other) {
     if (other is Cell) {
-      //return (id == other.id && rot == other.rot && bg == other.bg && invisible == other.invisible);
-      return true;
+      return (id == other.id && rot == other.rot && bg == other.bg && invisible == other.invisible && listsEqual(tags, other.tags) && mapsEqual(data, other.data));
     } else {
       return false;
     }
