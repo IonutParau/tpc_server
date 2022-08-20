@@ -12,13 +12,13 @@ import 'command.dart';
 import 'grid.dart';
 import 'roles.dart';
 
-final v = "Release Beta 2";
+final v = "Release Beta 3";
 
 // API docs
 /*
 
 [Grid Management]
-> place <x> <y> <id> <rot> <heat> - Places cell
+> place <x> <y> <id> <rot> <data> - Places cell
 > bg <x> <y> <bg> - Sets background
 > wrap - Toggles wrap mode
 > setinit <code> - Sets initial state on the server
@@ -34,7 +34,7 @@ final v = "Release Beta 2";
 > drop-hover <uuid> - Removes the hover
 
 [Cursor Management]
-> set-cursor <uuid> <x> <y> - Sets cursor state
+> set-cursor <uuid> <x> <y> <selection> <rotation> <texture> - Sets cursor state
 > remove-cursor <uuid> - Removes the cursor (client only)
 
 */
@@ -599,6 +599,9 @@ void execPacket(String data, WebSocketChannel ws) {
 
       if (insideGrid(x, y)) {
         grid[x][y].invisible = !grid[x][y].invisible;
+      }
+      for (var ws in webSockets) {
+        ws.sink.add(data);
       }
       break;
     default:

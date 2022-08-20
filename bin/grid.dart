@@ -6,25 +6,27 @@ import 'dart:typed_data';
 import 'package:base_x/base_x.dart';
 import 'package:quiver/collection.dart';
 
+import 'main.dart';
+
 class Cell {
   String id;
   int rot;
   String bg;
   int lifespan = 0;
   Map<String, dynamic> data;
-  List<String> tags;
+  Set<String> tags;
   bool invisible;
 
   Cell(this.id, this.rot, this.bg, this.lifespan, this.data, this.tags, this.invisible);
 
   Cell get copy {
-    return Cell(id, rot, bg, lifespan, Map.from(data), List.from(tags), invisible);
+    return Cell(id, rot, bg, lifespan, Map<String, dynamic>.from(data), Set<String>.from(tags), invisible);
   }
 
   @override
   bool operator ==(Object other) {
     if (other is Cell) {
-      return (id == other.id && rot == other.rot && bg == other.bg && invisible == other.invisible && listsEqual(tags, other.tags) && mapsEqual(data, other.data));
+      return (id == other.id && rot == other.rot && bg == other.bg && invisible == other.invisible && setsEqual(tags, other.tags) && mapsEqual(data, other.data));
     } else {
       return false;
     }
@@ -127,7 +129,7 @@ void makeGrid(int width, int height) {
   for (var x = 0; x < width; x++) {
     grid.add([]);
     for (var y = 0; y < height; y++) {
-      grid.last.add(Cell("empty", 0, "empty", 0, {}, [], false));
+      grid.last.add(Cell("empty", 0, "empty", 0, {}, {}, false));
     }
   }
 }
@@ -159,7 +161,7 @@ class P2 {
 
   static Cell decodeCell(String cell, List<String> cellTable) {
     final n = decodeNum(cell, valueString);
-    final c = Cell(cellTable[n ~/ 4], n % 4, "empty", 0, {}, [], false);
+    final c = Cell(cellTable[n ~/ 4], n % 4, "empty", 0, {}, {}, false);
 
     return c;
   }
@@ -370,7 +372,7 @@ class P3Cell {
   P3Cell(this.id, this.x, this.y, this.rot, this.data, this.tags, this.bg, this.lifespan);
 
   void place() {
-    grid[x][y] = Cell(id, rot, bg, lifespan, data, tags.toList(), false);
+    grid[x][y] = Cell(id, rot, bg, lifespan, data, tags, false);
   }
 }
 
@@ -447,7 +449,7 @@ class P4 {
   static void setCell(String str, int x, int y) {
     final m = decodeValue(str) as Map<String, dynamic>;
 
-    final c = Cell("", 0, "", 0, {}, [], false);
+    final c = Cell("", 0, "", 0, {}, {}, false);
     c.rot = m['rot'];
     if (m['data'] is Map<String, dynamic>) c.data = m['data']; // If it was empty, it would default to list lmao
     c.tags = m['tags'];
@@ -545,6 +547,14 @@ class P4 {
     );
 
     final props = decodeValue(segs[6]);
+    if (props['W'] != null) {
+      if (props['W'] != wrap) {
+        wrap = !wrap;
+        for (var ws in webSockets) {
+          ws.sink.add('wrap');
+        }
+      }
+    }
   }
 
   static String encodeValue(dynamic value) {
