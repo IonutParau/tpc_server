@@ -36,6 +36,16 @@ class Cell {
   int get hashCode => (rot * 4 + bg.hashCode + 20000 + rot.hashCode + 10000);
 }
 
+String cellDataStr(Map<String, dynamic> m) {
+  final strs = [];
+
+  m.forEach((key, value) {
+    strs.add("$key=$value");
+  });
+
+  return strs.join(":");
+}
+
 Map<String, dynamic> parseCellDataStr(String str) {
   if (num.tryParse(str) != null) {
     return {"heat": num.parse(str)};

@@ -34,7 +34,7 @@ final v = "Release Beta 3";
 > drop-hover <uuid> - Removes the hover
 
 [Cursor Management]
-> set-cursor <uuid> <x> <y> <selection> <rotation> <texture> - Sets cursor state
+> set-cursor <uuid> <x> <y> <selection> <rotation> <texture> <data> - Sets cursor state
 > remove-cursor <uuid> - Removes the cursor (client only)
 
 */
@@ -288,9 +288,10 @@ class ClientCursor {
   double x, y;
   String selection, texture;
   int rotation;
+  Map<String, dynamic> data;
   WebSocketChannel author;
 
-  ClientCursor(this.x, this.y, this.selection, this.rotation, this.texture, this.author);
+  ClientCursor(this.x, this.y, this.selection, this.rotation, this.texture, this.data, this.author);
 }
 
 final Map<String, ClientCursor> cursors = {};
@@ -475,11 +476,22 @@ void execPacket(String data, WebSocketChannel ws) {
       }
       break;
     case "set-cursor":
-      if (args.length != 7) {
+      if (args.length != 7 && args.length != 8 && args.length != 4) {
         kickWS(ws);
         break;
       }
       if (args[1] != clientIDs[ws]) break;
+
+      if (args.length == 7) {
+        args.add(":");
+      }
+      if (args.length == 4) {
+        args.add("empty");
+        args.add("0");
+        args.add("cursor");
+        args.add(":");
+      }
+
       if (cursors[args[1]] == null) {
         cursors[args[1]] = ClientCursor(
           double.parse(args[2]),
@@ -487,6 +499,7 @@ void execPacket(String data, WebSocketChannel ws) {
           args[4],
           int.parse(args[5]),
           args[6],
+          parseCellDataStr(args[7]),
           ws,
         );
         if (!config['silent']) {
@@ -659,7 +672,7 @@ Future<HttpServer> createServer(String ip, int port) async {
 
         cursors.forEach(
           (id, cursor) {
-            ws.sink.add('set-cursor $id ${cursor.x} ${cursor.y} ${cursor.selection} ${cursor.rotation} ${cursor.texture}');
+            ws.sink.add('set-cursor $id ${cursor.x} ${cursor.y} ${cursor.selection} ${cursor.rotation} ${cursor.texture} ${cellDataStr(cursor.data)}');
           },
         ); // Send cursors
       }
