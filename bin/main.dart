@@ -157,7 +157,7 @@ void main(List<String> arguments) async {
 
     makeGrid(int.parse(width), int.parse(height));
   } else {
-    print("Please input level code (P2, P3 or P4 only)");
+    print("Please input level code (P2, P3, P4 or P5 only)");
     stdout.write("Level code > ");
     final code = stdin.readLineSync()!;
 
@@ -654,7 +654,7 @@ Future<HttpServer> createServer(String ip, int port) async {
       );
 
       // Send grid
-      gridCache ??= P4.encodeGrid(); // Speeeeeed
+      gridCache ??= P5.encodeGrid(); // Speeeeeed
       ws.sink.add('grid $gridCache'); // Send to client
 
       if (type == ServerType.level) {
