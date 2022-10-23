@@ -654,7 +654,7 @@ Future<HttpServer> createServer(String ip, int port) async {
       );
 
       // Send grid
-      gridCache ??= P5.encodeGrid(); // Speeeeeed
+      gridCache ??= SavingFormat.encodeGrid(); // Speeeeeed
       ws.sink.add('grid $gridCache'); // Send to client
 
       if (type == ServerType.level) {

@@ -3,8 +3,8 @@ description: A simple command-line application.
 version: 1.0.0
 # homepage: https://www.example.com
 environment:
-  # replit uses version 2.12 so we downgrade sdk requirements to support it
-  sdk: ">=2.12.0 <3.0.0"
+  # replit uses version 2.13 so we downgrade sdk requirements to support it
+  sdk: ">=2.13.0 <3.0.0"
 
 dependencies:
   args: ^2.3.0
