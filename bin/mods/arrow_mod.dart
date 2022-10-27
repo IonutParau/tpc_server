@@ -9,6 +9,14 @@ class ArrowMod {
   Map<String, ArrowResource> termCmds = {};
   Map<String, ArrowResource> packets = {};
 
+  bool runTermCmd(String cmd, List<String> args) {
+    if (termCmds[cmd] == null) return false;
+
+    termCmds[cmd]!.call(args.map<ArrowResource>((e) => ArrowString(e)).toList(), vm.stackTrace, "tpc:runTermCmd", 0);
+
+    return true;
+  }
+
   ArrowResource loadRelativeFile(String file) {
     final f = File(path.joinAll([dir.path, ...file.split('/')]));
     if (f.existsSync()) {

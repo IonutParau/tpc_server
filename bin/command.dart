@@ -175,6 +175,9 @@ void execCmd(String cmd, List<String> args) {
     for (var mods in modLoader.luaMods) {
       if (mods.runTermCmd(cmd, args)) return;
     }
+    for (var mods in modLoader.arrowMods) {
+      if (mods.runTermCmd(cmd, args)) return;
+    }
     print("Unknown command $cmd");
   }
 }
