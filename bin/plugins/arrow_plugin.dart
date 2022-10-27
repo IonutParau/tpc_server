@@ -9,6 +9,22 @@ class ArrowPlugin {
   Map<String, ArrowResource> termCmds = {};
   Map<String, ArrowResource> packets = {};
 
+  void onConnect(String id, String ver) {
+    vm.globals.get("TPC").getField("onConnect", vm.stackTrace, "tpc:onConnect", 0).call([ArrowString(id), ArrowString(ver)], vm.stackTrace, "tpc:onConnect", 0);
+  }
+
+  void onKick(String id) {
+    vm.globals.get("TPC").getField("onKick", vm.stackTrace, "tpc:onKick", 0).call([ArrowString(id)], vm.stackTrace, "tpc:onKick", 0);
+  }
+
+  void onDisconnect(String id) {
+    vm.globals.get("TPC").getField("onDisconnect", vm.stackTrace, "tpc:onDisconnect", 0).call([ArrowString(id)], vm.stackTrace, "tpc:onDisconnect", 0);
+  }
+
+  void onPacket(String? id, String packet) {
+    vm.globals.get("TPC").getField("onPacket", vm.stackTrace, "tpc:onPacket", 0).call([id == null ? ArrowNull() : ArrowString(id), ArrowString(packet)], vm.stackTrace, "tpc:onPacket", 0);
+  }
+
   bool runTermCmd(String cmd, List<String> args) {
     if (termCmds[cmd] == null) return false;
 

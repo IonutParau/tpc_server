@@ -314,6 +314,15 @@ final pluginLoader = PluginLoader();
 
 void removeWebsocket(WebSocketChannel ws) {
   if (!webSockets.contains(ws)) return;
+  final id = clientIDs[ws];
+  if (id != null) {
+    for (var plugin in pluginLoader.luaPlugins) {
+      plugin.onDisconnect(id);
+    }
+    for (var plugin in pluginLoader.arrowPlugins) {
+      plugin.onDisconnect(id);
+    }
+  }
   if (!config['silent']) print('User left');
   ws.sink.close();
   webSockets.remove(ws);
@@ -357,6 +366,14 @@ void execPacket(String data, WebSocketChannel ws) {
     print('Kicking user for sending banned packet ${args.first}');
     kickWS(ws);
     return;
+  }
+
+  final id = clientIDs[ws];
+  for (var plugin in pluginLoader.luaPlugins) {
+    plugin.onPacket(id, data);
+  }
+  for (var plugin in pluginLoader.arrowPlugins) {
+    plugin.onPacket(id, data);
   }
 
   switch (args.first) {
@@ -590,17 +607,31 @@ void execPacket(String data, WebSocketChannel ws) {
 
       fixVersions();
 
-      if (versions.contains(fixVersion(v))) {
-        versionMap[ws] = fixVersion(v);
+      final fv = fixVersion(v);
+
+      if (versions.contains(fv)) {
+        versionMap[ws] = fv;
         clientIDs[ws] = id;
         if (!config['silent']) {
           print("A new user has joined. ID: $id. Version: $v");
         }
+        for (var plugins in pluginLoader.luaPlugins) {
+          plugins.onConnect(id, v);
+        }
+        for (var plugins in pluginLoader.arrowPlugins) {
+          plugins.onConnect(id, v);
+        }
       } else if (versions.isEmpty) {
-        versionMap[ws] = fixVersion(v);
+        versionMap[ws] = fv;
         clientIDs[ws] = id;
         if (!config['silent']) {
           print("A new user has joined. ID: $id. Version: $v");
+        }
+        for (var plugins in pluginLoader.luaPlugins) {
+          plugins.onConnect(id, v);
+        }
+        for (var plugins in pluginLoader.arrowPlugins) {
+          plugins.onConnect(id, v);
         }
       } else if (versions.isNotEmpty) {
         if (!config['silent']) {
@@ -608,10 +639,16 @@ void execPacket(String data, WebSocketChannel ws) {
         }
         kickWS(ws);
       } else {
-        versionMap[ws] = fixVersion(v);
+        versionMap[ws] = fv;
         clientIDs[ws] = id;
         if (!config['silent']) {
           print("A new user has joined. ID: $id. Version: $v");
+        }
+        for (var plugins in pluginLoader.luaPlugins) {
+          plugins.onConnect(id, v);
+        }
+        for (var plugins in pluginLoader.arrowPlugins) {
+          plugins.onConnect(id, v);
         }
       }
       break;
@@ -729,6 +766,15 @@ void kickWS(WebSocketChannel ws) {
   final kickAllowed = config['kick-allowed'];
 
   if (kickAllowed) {
+    final id = clientIDs[ws];
+    if (id != null) {
+      for (var plugin in pluginLoader.luaPlugins) {
+        plugin.onDisconnect(id);
+      }
+      for (var plugin in pluginLoader.arrowPlugins) {
+        plugin.onDisconnect(id);
+      }
+    }
     removeWebsocket(ws);
     if (!config['silent']) print('A user has been kicked');
   } else {

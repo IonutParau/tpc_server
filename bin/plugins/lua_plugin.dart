@@ -7,7 +7,37 @@ class LuaPlugin {
   LuaPlugin(this.dir) : vm = LuaState.newState();
 
   Set<String> termCmds = {};
-  Map<String, DartFunction> packets = {};
+  Set<String> packets = {};
+
+  void onConnect(String id, String ver) {
+    vm.getGlobal("TPC");
+    vm.getField(-1, "onConnect");
+    vm.pushString(ver);
+    vm.pushString(id);
+    vm.call(2, 0);
+  }
+
+  void onKick(String id) {
+    vm.getGlobal("TPC");
+    vm.getField(-1, "onKick");
+    vm.pushString(id);
+    vm.call(1, 0);
+  }
+
+  void onDisconnect(String id) {
+    vm.getGlobal("TPC");
+    vm.getField(-1, "onDisconnect");
+    vm.pushString(id);
+    vm.call(1, 0);
+  }
+
+  void onPacket(String? id, String packet) {
+    vm.getGlobal("TPC");
+    vm.getField(-1, "onKick");
+    vm.pushString(packet);
+    vm.pushString(id);
+    vm.call(1, 0);
+  }
 
   void loadRelativeFile(String file) {
     if (!vm.doFile(path.joinAll([dir.path, ...file.split('/')]))) {
@@ -37,6 +67,7 @@ class LuaPlugin {
 
   void prepare() {
     vm.openLibs();
+    // TPC table
     vm.newTable();
 
     vm.pushDartFunction(import);
@@ -126,7 +157,80 @@ class LuaPlugin {
     });
     vm.setField(-2, "Send");
 
+    // WS table
     vm.setField(-2, "WS");
+
+    // Grid table
+    vm.newTable();
+
+    vm.pushDartFunction((ls) {
+      gridCache ??= SavingFormat.encodeGrid();
+
+      ls.pushString(gridCache);
+
+      return 1;
+    });
+
+    vm.setField(-2, "Code");
+
+    // Grid table
+    vm.setField(-2, "Grid");
+
+    // Plugins table
+    vm.newTable();
+
+    // Amount table
+    vm.newTable();
+
+    vm.pushDartFunction((ls) {
+      vm.pushInteger(pluginLoader.arrowPlugins.length);
+      return 1;
+    });
+    vm.setField(-2, "Arrow");
+
+    vm.pushDartFunction((ls) {
+      vm.pushInteger(pluginLoader.luaPlugins.length);
+      return 1;
+    });
+    vm.setField(-2, "Lua");
+
+    // Amount table
+    vm.setField(-2, "Amount");
+
+    // ByName table
+    vm.newTable();
+
+    vm.pushDartFunction((ls) {
+      var i = 0;
+      ls.newTable();
+      for (var plugin in pluginLoader.arrowPlugins) {
+        i++;
+        ls.pushInteger(i);
+        ls.pushString(path.split(plugin.dir.path).last);
+        ls.setTable(-3);
+      }
+      return 1;
+    });
+    vm.setField(-2, "Arrow");
+
+    vm.pushDartFunction((ls) {
+      var i = 0;
+      ls.newTable();
+      for (var plugin in pluginLoader.luaPlugins) {
+        i++;
+        ls.pushInteger(i);
+        ls.pushString(path.split(plugin.dir.path).last);
+        ls.setTable(-3);
+      }
+      return 1;
+    });
+    vm.setField(-2, "Lua");
+
+    // ByName table
+    vm.setField(-2, "ByName");
+
+    // Plugins table
+    vm.setField(-2, "Plugins");
 
     // TPC table
     vm.setGlobal("TPC");
