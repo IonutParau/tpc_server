@@ -1,10 +1,10 @@
-part of mods;
+part of plugins;
 
-class LuaMod {
+class LuaPlugin {
   Directory dir;
   LuaState vm;
 
-  LuaMod(this.dir) : vm = LuaState.newState();
+  LuaPlugin(this.dir) : vm = LuaState.newState();
 
   Set<String> termCmds = {};
   Map<String, DartFunction> packets = {};

@@ -1,10 +1,10 @@
-part of mods;
+part of plugins;
 
-class ArrowMod {
+class ArrowPlugin {
   Directory dir;
   ArrowVM vm = ArrowVM();
 
-  ArrowMod(this.dir);
+  ArrowPlugin(this.dir);
 
   Map<String, ArrowResource> termCmds = {};
   Map<String, ArrowResource> packets = {};

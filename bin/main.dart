@@ -11,7 +11,7 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 import 'command.dart';
 import 'grid.dart';
 import 'roles.dart';
-import 'mods/mods.dart';
+import 'plugins/plugins.dart';
 
 final v = "Release Beta 4";
 
@@ -231,14 +231,14 @@ void main(List<String> arguments) async {
   }
 
   print("Loading plugins...");
-  modLoader.getModDirs().forEach(modLoader.addMod);
-  for (var mod in modLoader.luaMods) {
-    mod.prepare();
-    mod.load();
+  pluginLoader.getPluginDirs().forEach(pluginLoader.addPlugin);
+  for (var plugin in pluginLoader.luaPlugins) {
+    plugin.prepare();
+    plugin.load();
   }
-  for (var mod in modLoader.arrowMods) {
-    mod.prepare();
-    mod.load();
+  for (var plugin in pluginLoader.arrowPlugins) {
+    plugin.prepare();
+    plugin.load();
   }
 
   Future.delayed(Duration(milliseconds: 500)).then(
@@ -310,7 +310,7 @@ final Map<String, ClientCursor> cursors = {};
 
 final Map<WebSocketChannel, String> clientIDs = {};
 final Set<String> clientIDList = {};
-final modLoader = ModLoader();
+final pluginLoader = PluginLoader();
 
 void removeWebsocket(WebSocketChannel ws) {
   if (!webSockets.contains(ws)) return;

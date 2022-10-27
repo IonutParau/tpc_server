@@ -172,11 +172,11 @@ void execCmd(String cmd, List<String> args) {
       kickWS(user);
     }
   } else {
-    for (var mods in modLoader.luaMods) {
-      if (mods.runTermCmd(cmd, args)) return;
+    for (var plugin in pluginLoader.luaPlugins) {
+      if (plugin.runTermCmd(cmd, args)) return;
     }
-    for (var mods in modLoader.arrowMods) {
-      if (mods.runTermCmd(cmd, args)) return;
+    for (var plugin in pluginLoader.arrowPlugins) {
+      if (plugin.runTermCmd(cmd, args)) return;
     }
     print("Unknown command $cmd");
   }
