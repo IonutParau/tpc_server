@@ -71,6 +71,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "1.0.1"
+  lua_dardo:
+    dependency: "direct main"
+    description:
+      name: lua_dardo
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "0.0.4"
   matcher:
     dependency: transitive
     description:
@@ -86,12 +93,12 @@ packages:
     source: hosted
     version: "1.7.0"
   path:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: path
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.8.1"
+    version: "1.8.2"
   quiver:
     dependency: "direct main"
     description:
@@ -120,6 +127,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "1.8.2"
+  sprintf:
+    dependency: transitive
+    description:
+      name: sprintf
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "6.0.2"
   stack_trace:
     dependency: transitive
     description:

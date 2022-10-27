@@ -11,6 +11,8 @@ dependencies:
   base_x: ^2.0.0
   crypto: ^3.0.2
   dart_ipify: ^1.1.1
+  lua_dardo: ^0.0.4
+  path: ^1.8.2
   quiver: ^3.1.0
   shelf: ^1.2.0
   shelf_web_socket: ^1.0.1
