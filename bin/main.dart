@@ -237,7 +237,8 @@ void main(List<String> arguments) async {
     mod.load();
   }
   for (var mod in modLoader.arrowMods) {
-    // TODO: Add Arrow Mods
+    mod.prepare();
+    mod.load();
   }
 
   Future.delayed(Duration(milliseconds: 500)).then(

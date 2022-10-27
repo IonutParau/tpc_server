@@ -10,8 +10,8 @@ class LuaMod {
   Map<String, DartFunction> packets = {};
 
   void loadRelativeFile(String file) {
-    if (!vm.doFile(path.join(dir.path, "main.lua"))) {
-      print("Running a plugin failed");
+    if (!vm.doFile(path.joinAll([dir.path, ...file.split('/')]))) {
+      print("Running a plugin failed!\nFailed to load relative file: $file");
       exit(0);
     }
   }
@@ -38,6 +38,9 @@ class LuaMod {
   void prepare() {
     vm.openLibs();
     vm.newTable();
+
+    vm.pushDartFunction(import);
+    vm.setField(-2, "Import");
 
     // Register Terminal Command
     vm.pushDartFunction((ls) {
