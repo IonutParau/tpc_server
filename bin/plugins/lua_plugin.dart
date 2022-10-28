@@ -9,38 +9,60 @@ class LuaPlugin {
   Set<String> termCmds = {};
   Set<String> packets = {};
 
+  // Collects everything but the top X elements
+  void collect(LuaState state, [int off = 0]) {
+    while (state.getTop() > off) {
+      state.remove(state.getTop() - off);
+    }
+  }
+
+  void collected(LuaState state, void Function() toRun, [int returns = 0]) {
+    final start = state.getTop();
+
+    toRun();
+
+    while (state.getTop() - returns > start) {
+      state.remove(state.getTop() - returns);
+    }
+  }
+
   void onConnect(String id, String ver) {
-    vm.getGlobal("TPC");
-    vm.getField(-1, "onConnect");
-    vm.pushString(id);
-    vm.pushString(ver);
-    vm.call(2, 0);
-    vm.pop(vm.getTop());
+    collected(vm, () {
+      vm.getGlobal("TPC");
+      vm.getField(-1, "onConnect");
+      vm.pushString(id);
+      vm.pushString(ver);
+      vm.call(2, 0);
+    });
   }
 
   void onKick(String id) {
-    vm.getGlobal("TPC");
-    vm.getField(-1, "onKick");
-    vm.pushString(id);
-    vm.call(1, 0);
-    vm.pop(vm.getTop());
+    collected(vm, () {
+      vm.getGlobal("TPC");
+      vm.getField(-1, "onKick");
+      vm.pushString(id);
+      vm.call(1, 0);
+    });
   }
 
   void onDisconnect(String id) {
-    vm.getGlobal("TPC");
-    vm.getField(-1, "onDisconnect");
-    vm.pushString(id);
-    vm.call(1, 0);
-    vm.pop(vm.getTop());
+    collected(vm, () {
+      vm.getGlobal("TPC");
+      vm.getField(-1, "onDisconnect");
+      vm.pushString(id);
+      vm.call(1, 0);
+    });
   }
 
   void onPacket(String? id, String packet) {
-    vm.getGlobal("TPC");
-    vm.getField(-1, "onPacket");
-    vm.pushString(id);
-    vm.pushString(packet);
-    vm.call(2, 0);
-    vm.pop(vm.getTop());
+    collected(vm, () {
+      vm.getGlobal("TPC");
+      vm.getField(-1, "onPacket");
+      vm.pushString(id);
+      vm.pushString(packet);
+      vm.call(2, 0);
+      vm.pop(vm.getTop());
+    });
   }
 
   void loadRelativeFile(String file) {
@@ -52,17 +74,18 @@ class LuaPlugin {
 
   bool runTermCmd(String termCmd, List<String> args) {
     if (termCmds.contains(termCmd)) {
-      vm.getGlobal("TERM:$termCmd");
-      vm.newTable();
-      var i = 0;
-      for (var arg in args) {
-        i++;
-        vm.pushInteger(i);
-        vm.pushString(arg);
-        vm.setTable(-3);
-      }
-      vm.call(1, 0);
-      vm.pop(vm.getTop());
+      collected(vm, () {
+        vm.getGlobal("TERM:$termCmd");
+        vm.newTable();
+        var i = 0;
+        for (var arg in args) {
+          i++;
+          vm.pushInteger(i);
+          vm.pushString(arg);
+          vm.setTable(-3);
+        }
+        vm.call(1, 0);
+      });
 
       return true;
     }
@@ -72,18 +95,18 @@ class LuaPlugin {
 
   bool runPacket(String packet, List<String> args) {
     if (packets.contains(packet)) {
-      vm.getGlobal("PACKET:$packet");
-      vm.newTable();
-      var i = 0;
-      for (var arg in args) {
-        i++;
-        vm.pushInteger(i);
-        vm.pushString(arg);
-        vm.setTable(-3);
-      }
-      vm.call(1, 0);
-      vm.pop(vm.getTop());
-
+      collected(vm, () {
+        vm.getGlobal("PACKET:$packet");
+        vm.newTable();
+        var i = 0;
+        for (var arg in args) {
+          i++;
+          vm.pushInteger(i);
+          vm.pushString(arg);
+          vm.setTable(-3);
+        }
+        vm.call(1, 0);
+      });
       return true;
     }
 
@@ -91,23 +114,23 @@ class LuaPlugin {
   }
 
   String? onPing(Map<String, String> headers, String? ip) {
-    vm.getGlobal("TPC");
-    vm.getField(-1, "onPing");
-    if (!vm.isFunction(-1)) return null;
-    vm.pushString(ip);
-    vm.newTable();
-    headers.forEach((key, value) {
-      vm.pushString(value);
-      vm.setField(-2, key);
-    });
-    vm.call(2, 1);
+    collected(vm, () {
+      vm.getGlobal("TPC");
+      vm.getField(-1, "onPing");
+      if (!vm.isFunction(-1)) return null;
+      vm.pushString(ip);
+      vm.newTable();
+      headers.forEach((key, value) {
+        vm.pushString(value);
+        vm.setField(-2, key);
+      });
+      vm.call(2, 1);
+    }, 1);
     if (vm.isString(-1)) {
       final s = vm.toStr(-1)!;
-      vm.pop(vm.getTop());
       return s;
     }
 
-    vm.pop(vm.getTop());
     return null;
   }
 
