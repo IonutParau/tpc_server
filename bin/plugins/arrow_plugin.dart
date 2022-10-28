@@ -93,6 +93,36 @@ class ArrowPlugin {
       return ArrowNull();
     }, 2);
 
+    final grid = <String, ArrowResource>{};
+
+    grid["Code"] = ArrowExternalFunction((params, stackTrace) {
+      gridCache ??= SavingFormat.encodeGrid();
+      return ArrowString(gridCache!);
+    });
+
+    tpc["Grid"] = ArrowMap(grid);
+
+    final pluginAmount = <String, ArrowResource>{};
+    final pluginByName = <String, ArrowResource>{};
+
+    pluginAmount["Lua"] = ArrowExternalFunction((params, stackTrace) {
+      return ArrowNumber(pluginLoader.luaPlugins.length);
+    });
+
+    pluginAmount["Arrow"] = ArrowExternalFunction((params, stackTrace) {
+      return ArrowNumber(pluginLoader.arrowPlugins.length);
+    });
+
+    pluginByName["Lua"] = ArrowExternalFunction((params, stackTrace) {
+      return ArrowList(pluginLoader.luaPlugins.map((e) => ArrowString(path.split(e.dir.path).last)).toList());
+    });
+
+    pluginByName["Arrow"] = ArrowExternalFunction((params, stackTrace) {
+      return ArrowList(pluginLoader.arrowPlugins.map((e) => ArrowString(path.split(e.dir.path).last)).toList());
+    });
+
+    tpc["Packet"] = ArrowMap({"Amount": ArrowMap(pluginAmount), "ByName": ArrowMap(pluginByName)});
+
     tpc["GetConnections"] = ArrowExternalFunction((params, stackTrace) {
       return ArrowList(clientIDList.map((e) => ArrowString(e)).toList());
     });
@@ -143,7 +173,118 @@ class ArrowPlugin {
       return ArrowNull();
     }, 2);
 
+    tpcWS["GetClientVer"] = ArrowExternalFunction((params, stackTrace) {
+      final id = params.first.string;
+
+      WebSocketChannel? user;
+      for (var ws in webSockets) {
+        if (clientIDs[ws] == id) {
+          user = ws;
+        }
+      }
+      if (user != null) {
+        final ver = versionMap[user];
+        if (ver == null) return ArrowNull();
+        return ArrowString(ver);
+      }
+
+      return ArrowNull();
+    }, 1);
+
+    tpcWS["SetCursor"] = ArrowExternalFunction((params, stackTrace) {
+      final id = params.first.string;
+      final cursor = params[1];
+
+      WebSocketChannel? user;
+      for (var ws in webSockets) {
+        if (clientIDs[ws] == id) {
+          user = ws;
+        }
+      }
+
+      if (cursor is ArrowMap && user != null) {
+        stackTrace.push(ArrowStackTraceElement("TPC.WS.SetCursor", "tpc:SetCurosr", 0));
+        try {
+          final clientCursor = ClientCursor(
+            (cursor.map['x'] as ArrowNumber).number,
+            (cursor.map['y'] as ArrowNumber).number,
+            (cursor.map['selection'] as ArrowString).str,
+            (cursor.map['rotation'] as ArrowNumber).number.toInt(),
+            (cursor.map['texture'] as ArrowString).str,
+            {},
+            user,
+          );
+
+          for (var webSocket in webSockets) {
+            webSocket.sink.add(clientCursor.toPacket(id));
+          }
+        } catch (e) {
+          print(e);
+          print("Stack Trace:");
+          stackTrace.show();
+        }
+        stackTrace.pop();
+      }
+
+      return ArrowNull();
+    }, 2);
+
+    tpcWS["GetCursor"] = ArrowExternalFunction((params, stackTrace) {
+      final id = params.first.string;
+
+      final cursor = cursors[id];
+
+      if (cursor != null) {
+        final m = <String, ArrowResource>{};
+
+        m['x'] = ArrowNumber(cursor.x);
+        m['y'] = ArrowNumber(cursor.y);
+        m['selection'] = ArrowString(cursor.selection);
+        m['rotation'] = ArrowNumber(cursor.rotation);
+        m['texture'] = ArrowString(cursor.texture);
+
+        return ArrowMap(m);
+      }
+
+      return ArrowNull();
+    }, 1);
+
     tpc["WS"] = ArrowMap(tpcWS);
+
+    tpc["GetCursors"] = ArrowExternalFunction((params, stackTrace) {
+      final cursorsMap = ArrowMap({});
+
+      cursors.forEach(
+        (id, cursor) {
+          final m = <String, ArrowResource>{};
+
+          m['x'] = ArrowNumber(cursor.x);
+          m['y'] = ArrowNumber(cursor.y);
+          m['selection'] = ArrowString(cursor.selection);
+          m['rotation'] = ArrowNumber(cursor.rotation);
+          m['texture'] = ArrowString(cursor.texture);
+
+          cursorsMap.map[id] = ArrowMap(m);
+        },
+      );
+
+      return cursorsMap;
+    });
+
+    tpc["GetStreams"] = ArrowExternalFunction((params, stackTrace) {
+      final def = params[0].string;
+      final streams = <ArrowResource>[];
+
+      for (var ws in webSockets) {
+        streams.add(ArrowString(clientIDs[ws] ?? def));
+      }
+
+      return ArrowList(streams);
+    }, 1);
+
+    tpc["GetServerVersion"] = ArrowExternalFunction((params, stackTrace) {
+      return ArrowString(v);
+    });
 
     vm.globals.set("TPC", ArrowMap(tpc));
   }
