@@ -114,10 +114,15 @@ class LuaPlugin {
   }
 
   String? onPing(Map<String, String> headers, String? ip) {
+    bool notfunc = false;
+
     collected(vm, () {
       vm.getGlobal("TPC");
       vm.getField(-1, "onPing");
-      if (!vm.isFunction(-1)) return null;
+      if (!vm.isFunction(-1)) {
+        notfunc = true;
+        return;
+      }
       vm.pushString(ip);
       vm.newTable();
       headers.forEach((key, value) {
@@ -126,6 +131,7 @@ class LuaPlugin {
       });
       vm.call(2, 1);
     }, 1);
+    if (notfunc) return null;
     if (vm.isString(-1)) {
       final s = vm.toStr(-1)!;
       return s;
