@@ -15,6 +15,7 @@ class LuaPlugin {
     vm.pushString(id);
     vm.pushString(ver);
     vm.call(2, 0);
+    vm.pop(1);
   }
 
   void onKick(String id) {
@@ -22,6 +23,7 @@ class LuaPlugin {
     vm.getField(-1, "onKick");
     vm.pushString(id);
     vm.call(1, 0);
+    vm.pop(1);
   }
 
   void onDisconnect(String id) {
@@ -29,6 +31,7 @@ class LuaPlugin {
     vm.getField(-1, "onDisconnect");
     vm.pushString(id);
     vm.call(1, 0);
+    vm.pop(1);
   }
 
   void onPacket(String? id, String packet) {
@@ -37,6 +40,7 @@ class LuaPlugin {
     vm.pushString(id);
     vm.pushString(packet);
     vm.call(2, 0);
+    vm.pop(1);
   }
 
   void loadRelativeFile(String file) {
@@ -58,6 +62,7 @@ class LuaPlugin {
         vm.setTable(-3);
       }
       vm.call(1, 0);
+      vm.pop(1);
 
       return true;
     }
@@ -77,6 +82,7 @@ class LuaPlugin {
         vm.setTable(-3);
       }
       vm.call(1, 0);
+      vm.pop(1);
 
       return true;
     }
@@ -96,6 +102,7 @@ class LuaPlugin {
     });
     vm.call(2, 1);
     if (vm.isString(-1)) {
+      vm.remove(-2);
       return vm.toStr(-1)!;
     }
 
