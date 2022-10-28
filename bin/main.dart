@@ -235,6 +235,7 @@ void main(List<String> arguments) async {
   for (var plugin in pluginLoader.luaPlugins) {
     plugin.prepare();
     plugin.load();
+    plugin.onConnect("test", "ur mom");
   }
   for (var plugin in pluginLoader.arrowPlugins) {
     plugin.prepare();

@@ -12,8 +12,8 @@ class LuaPlugin {
   void onConnect(String id, String ver) {
     vm.getGlobal("TPC");
     vm.getField(-1, "onConnect");
-    vm.pushString(ver);
     vm.pushString(id);
+    vm.pushString(ver);
     vm.call(2, 0);
   }
 
@@ -34,8 +34,8 @@ class LuaPlugin {
   void onPacket(String? id, String packet) {
     vm.getGlobal("TPC");
     vm.getField(-1, "onPacket");
-    vm.pushString(packet);
     vm.pushString(id);
+    vm.pushString(packet);
     vm.call(1, 0);
   }
 
