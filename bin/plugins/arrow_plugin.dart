@@ -52,6 +52,13 @@ class ArrowPlugin {
 
     final tpc = <String, ArrowResource>{};
 
+    final emptyFunc = ArrowExternalFunction((params, stackTrace) => ArrowNull(), 0);
+
+    tpc["onConnect"] = emptyFunc;
+    tpc["onKick"] = emptyFunc;
+    tpc["onDisconnect"] = emptyFunc;
+    tpc["onPacket"] = emptyFunc;
+
     tpc["Import"] = ArrowExternalFunction(import, 1);
 
     tpc["RegisterTerminalCommand"] = ArrowExternalFunction((params, stackTrace) {

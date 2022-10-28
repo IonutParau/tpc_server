@@ -33,7 +33,7 @@ class LuaPlugin {
 
   void onPacket(String? id, String packet) {
     vm.getGlobal("TPC");
-    vm.getField(-1, "onKick");
+    vm.getField(-1, "onPacket");
     vm.pushString(packet);
     vm.pushString(id);
     vm.call(1, 0);
@@ -69,6 +69,18 @@ class LuaPlugin {
     vm.openLibs();
     // TPC table
     vm.newTable();
+
+    vm.pushDartFunction((ls) => 0);
+    vm.setField(-2, "onConnect");
+
+    vm.pushDartFunction((ls) => 0);
+    vm.setField(-2, "onDisconnect");
+
+    vm.pushDartFunction((ls) => 0);
+    vm.setField(-2, "onKick");
+
+    vm.pushDartFunction((ls) => 0);
+    vm.setField(-2, "onPacket");
 
     vm.pushDartFunction(import);
     vm.setField(-2, "Import");
