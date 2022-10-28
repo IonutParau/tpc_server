@@ -304,6 +304,10 @@ class ClientCursor {
   WebSocketChannel author;
 
   ClientCursor(this.x, this.y, this.selection, this.rotation, this.texture, this.data, this.author);
+
+  String toPacket(String id) {
+    return 'set-cursor $id $x $y $selection $rotation $texture ${cellDataStr(data)}';
+  }
 }
 
 final Map<String, ClientCursor> cursors = {};
@@ -722,7 +726,7 @@ Future<HttpServer> createServer(String ip, int port) async {
 
         cursors.forEach(
           (id, cursor) {
-            ws.sink.add('set-cursor $id ${cursor.x} ${cursor.y} ${cursor.selection} ${cursor.rotation} ${cursor.texture} ${cellDataStr(cursor.data)}');
+            ws.sink.add(cursor.toPacket(id));
           },
         ); // Send cursors
       }

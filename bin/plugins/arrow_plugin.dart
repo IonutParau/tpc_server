@@ -33,6 +33,14 @@ class ArrowPlugin {
     return true;
   }
 
+  bool runPacket(String packet, List<String> args) {
+    if (packets[packet] == null) return false;
+
+    packets[packet]!.call(args.map<ArrowResource>((e) => ArrowString(e)).toList(), vm.stackTrace, "tpc:runPacket", 0);
+
+    return true;
+  }
+
   ArrowResource loadRelativeFile(String file) {
     final f = File(path.joinAll([dir.path, ...file.split('/')]));
     if (f.existsSync()) {
@@ -68,6 +76,18 @@ class ArrowPlugin {
       if (func.type == "function") {
         print("Registering Terminal Command: $cmd");
         termCmds[cmd.string] = func;
+      }
+
+      return ArrowNull();
+    }, 2);
+
+    tpc["RegisterPacket"] = ArrowExternalFunction((params, stackTrace) {
+      final packet = params[0];
+      final func = params[1];
+
+      if (func.type == "function") {
+        print("Registering Packet: $packet");
+        packets[packet.string] = func;
       }
 
       return ArrowNull();

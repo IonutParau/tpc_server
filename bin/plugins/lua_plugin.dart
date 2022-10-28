@@ -65,6 +65,25 @@ class LuaPlugin {
     return false;
   }
 
+  bool runPacket(String packet, List<String> args) {
+    if (packets.contains(packet)) {
+      vm.getGlobal("PACKET:$packet");
+      vm.newTable();
+      var i = 0;
+      for (var arg in args) {
+        i++;
+        vm.pushInteger(i);
+        vm.pushString(arg);
+        vm.setTable(-3);
+      }
+      vm.call(1, 0);
+
+      return true;
+    }
+
+    return false;
+  }
+
   void prepare() {
     vm.openLibs();
     // TPC table
@@ -99,6 +118,21 @@ class LuaPlugin {
       return 0;
     });
     vm.setField(-2, "RegisterTerminalCommand");
+
+    // Register Packet
+    vm.pushDartFunction((ls) {
+      final id = ls.toStr(-2);
+      ls.pushValue(-1);
+
+      if (id != null) {
+        print("Registering Packet: $id");
+        packets.add(id);
+        ls.setGlobal("PACKET:$id");
+      }
+
+      return 0;
+    });
+    vm.setField(-2, "RegisterPacket");
 
     // Get Current Connections
     vm.pushDartFunction((ls) {
@@ -169,8 +203,149 @@ class LuaPlugin {
     });
     vm.setField(-2, "Send");
 
+    vm.pushDartFunction((ls) {
+      final id = ls.toStr(-1);
+
+      if (id == null) {
+        ls.pushNil();
+      } else {
+        WebSocketChannel? ws;
+        for (var webSocket in webSockets) {
+          if (clientIDs[webSocket] == id) {
+            ws = webSocket;
+          }
+        }
+        if (ws != null) {
+          ls.pushString(versionMap[ws]);
+        } else {
+          ls.pushNil();
+        }
+      }
+
+      return 1;
+    });
+    vm.setField(-2, "GetClientVer");
+
+    vm.pushDartFunction((ls) {
+      final id = ls.toStr(-1);
+      ls.pushValue(-2);
+
+      if (id != null) {
+        WebSocketChannel? ws;
+        for (var webSocket in webSockets) {
+          if (clientIDs[webSocket] == id) {
+            ws = webSocket;
+          }
+        }
+        if (ws != null) {
+          ls.getField(-2, "x");
+          final x = ls.toNumber(-1);
+          ls.getField(-2, "y");
+          final y = ls.toNumber(-1);
+          ls.getField(-2, "selection");
+          final selection = ls.toStr(-1)!;
+          ls.getField(-2, "rotation");
+          final rotation = ls.toInteger(-1) % 4;
+          ls.getField(-2, "texture");
+          final texture = ls.toStr(-1)!;
+          var cursor = ClientCursor(x, y, selection, rotation, texture, {}, ws);
+          cursors[id] = cursor;
+
+          for (var webSocket in webSockets) {
+            webSocket.sink.add(cursor.toPacket(id));
+          }
+        }
+      }
+
+      return 0;
+    });
+    vm.setField(-2, "SetCursor");
+
+    vm.pushDartFunction((ls) {
+      final id = ls.toStr(-1);
+
+      if (id != null) {
+        final cursor = cursors[id];
+        if (cursor != null) {
+          ls.newTable();
+
+          ls.pushNumber(cursor.x);
+          ls.setField(-2, "x");
+
+          ls.pushNumber(cursor.y);
+          ls.setField(-2, "y");
+
+          ls.pushString(cursor.selection);
+          ls.setField(-2, "selection");
+
+          ls.pushInteger(cursor.rotation);
+          ls.setField(-2, "rotation");
+
+          ls.pushString(cursor.texture);
+          ls.setField(-2, "texture");
+
+          return 1;
+        }
+      }
+
+      ls.pushNil();
+      return 1;
+    });
+    vm.setField(-2, "GetCursor");
+
     // WS table
     vm.setField(-2, "WS");
+
+    vm.pushDartFunction((ls) {
+      ls.newTable();
+      cursors.forEach((id, cursor) {
+        ls.newTable();
+
+        ls.pushNumber(cursor.x);
+        ls.setField(-2, "x");
+
+        ls.pushNumber(cursor.y);
+        ls.setField(-2, "y");
+
+        ls.pushString(cursor.selection);
+        ls.setField(-2, "selection");
+
+        ls.pushInteger(cursor.rotation);
+        ls.setField(-2, "rotation");
+
+        ls.pushString(cursor.texture);
+        ls.setField(-2, "texture");
+
+        ls.setField(-2, id);
+      });
+      return 1;
+    });
+    vm.setField(-2, "GetCursors");
+
+    vm.pushDartFunction((ls) {
+      final def = ls.toStr(-1);
+      if (def != null) {
+        ls.newTable();
+        var i = 0;
+        for (var webSocket in webSockets) {
+          final id = clientIDs[webSocket] ?? def;
+          i++;
+          ls.pushInteger(i);
+          ls.pushString(id);
+          ls.setTable(-3);
+        }
+        return 1;
+      }
+      ls.pushNil();
+      return 1;
+    });
+    vm.setField(-2, "GetStreams");
+
+    vm.pushDartFunction((ls) {
+      ls.pushString(v);
+      return 1;
+    });
+    vm.setField(-2, "GetServerVersion");
 
     // Grid table
     vm.newTable();
