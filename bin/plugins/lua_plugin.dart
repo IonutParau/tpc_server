@@ -36,7 +36,7 @@ class LuaPlugin {
     vm.getField(-1, "onPacket");
     vm.pushString(id);
     vm.pushString(packet);
-    vm.call(1, 0);
+    vm.call(2, 0);
   }
 
   void loadRelativeFile(String file) {
