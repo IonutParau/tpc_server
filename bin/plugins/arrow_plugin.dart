@@ -155,7 +155,7 @@ class ArrowPlugin {
       return ArrowList(pluginLoader.arrowPlugins.map((e) => ArrowString(path.split(e.dir.path).last)).toList());
     });
 
-    tpc["Packet"] = ArrowMap({"Amount": ArrowMap(pluginAmount), "ByName": ArrowMap(pluginByName)});
+    tpc["Plugins"] = ArrowMap({"Amount": ArrowMap(pluginAmount), "ByName": ArrowMap(pluginByName)});
 
     tpc["GetConnections"] = ArrowExternalFunction((params, stackTrace) {
       return ArrowList(clientIDList.map((e) => ArrowString(e)).toList());
