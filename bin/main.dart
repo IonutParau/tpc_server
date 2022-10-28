@@ -802,6 +802,14 @@ FutureOr<Response> Function(Request rq) serverThing(FutureOr<Response> Function(
     latestIP = ip;
 
     if (rq.method != "GET") {
+      for (var plugin in pluginLoader.luaPlugins) {
+        final res = plugin.onPing(rq.headers, ip);
+        if (res != null) return Future<Response>.value(Response.ok(res));
+      }
+      for (var plugin in pluginLoader.arrowPlugins) {
+        final res = plugin.onPing(rq.headers, ip);
+        if (res != null) return Future<Response>.value(Response.ok(res));
+      }
       return Future<Response>.value(Response.ok("Server exists"));
     } else {
       return wsHandler(rq);

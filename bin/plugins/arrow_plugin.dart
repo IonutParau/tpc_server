@@ -41,6 +41,40 @@ class ArrowPlugin {
     return true;
   }
 
+  String? onPing(Map<String, String> headers, String? ip) {
+    final params = <ArrowResource>[];
+
+    final hm = <String, ArrowResource>{};
+    headers.forEach((key, value) {
+      hm[key] = ArrowString(value);
+    });
+    params.add(ArrowMap(hm));
+
+    params.add(ip == null ? ArrowNull() : ArrowString(ip));
+
+    vm.stackTrace.push(ArrowStackTraceElement("On Ping", "tpc:onPing", 0));
+    try {
+      final tpc = vm.globals.get("TPC");
+      if (tpc is ArrowMap) {
+        vm.stackTrace.push(ArrowStackTraceElement("Read TPC.onPing", "tpc:onPing", 0));
+        final ping = tpc.getField("onPing", vm.stackTrace, "tpc:onPacket", 0);
+        vm.stackTrace.pop();
+        vm.stackTrace.push(ArrowStackTraceElement("Call TPC.onPing", "tpc:onPing", 0));
+        final result = ping.call(params, vm.stackTrace, "tpc:onPing", 0);
+        vm.stackTrace.pop();
+
+        if (result is ArrowString) {
+          return result.str;
+        }
+      }
+    } catch (e) {
+      print(e);
+      vm.stackTrace.show();
+    }
+    vm.stackTrace.pop();
+    return null;
+  }
+
   ArrowResource loadRelativeFile(String file) {
     final f = File(path.joinAll([dir.path, ...file.split('/')]));
     if (f.existsSync()) {

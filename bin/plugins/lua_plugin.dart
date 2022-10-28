@@ -84,6 +84,24 @@ class LuaPlugin {
     return false;
   }
 
+  String? onPing(Map<String, String> headers, String? ip) {
+    vm.getGlobal("TPC");
+    vm.getField(-1, "onPing");
+    if (!vm.isFunction(-1)) return null;
+    vm.pushString(ip);
+    vm.newTable();
+    headers.forEach((key, value) {
+      vm.pushString(value);
+      vm.setField(-2, key);
+    });
+    vm.call(2, 1);
+    if (vm.isString(-1)) {
+      return vm.toStr(-1)!;
+    }
+
+    return null;
+  }
+
   void prepare() {
     vm.openLibs();
     // TPC table
