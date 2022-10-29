@@ -767,13 +767,13 @@ Future<HttpServer> createServer(String ip, int port) async {
             );
           },
         ); // Send hovering cells
-
-        cursors.forEach(
-          (id, cursor) {
-            ws.sink.add(cursor.toPacket(id));
-          },
-        ); // Send cursors
       }
+
+      cursors.forEach(
+        (id, cursor) {
+          ws.sink.add(cursor.toPacket(id));
+        },
+      ); // Send cursors
 
       fixVersions();
       if (versions.isNotEmpty) {
