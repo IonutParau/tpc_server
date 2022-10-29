@@ -548,6 +548,7 @@ void execPacket(String data, WebSocketChannel ws) {
       }
       break;
     case "token":
+      if (clientIDs[ws] != null) return;
       final tokenJSON = jsonDecode(args.sublist(1).join(" "));
       final v = tokenJSON["version"];
       if (v is! String) {
@@ -560,7 +561,7 @@ void execPacket(String data, WebSocketChannel ws) {
         break;
       }
 
-      if (id.length > 500 || id.contains("\n")) {
+      if (id.length > 500 || !isValidID(id)) {
         kickWS(ws);
         break;
       }
@@ -683,6 +684,10 @@ void execPacket(String data, WebSocketChannel ws) {
 
         final id = clientIDs[ws];
         if (id == null) throw "Pending User tried to send message";
+        if (!clientIDList.contains(id)) {
+          shouldKick;
+          return;
+        }
         if (id == signed) {
           for (var ows in webSockets) {
             ows.sink.add(data);
@@ -778,6 +783,11 @@ Future<HttpServer> createServer(String ip, int port) async {
               print("User kicked for no connection token sent");
               kickWS(ws); // Remove for invalid version
             } // Version check
+
+            if (!cursors.containsKey(clientIDs[ws] ?? "")) {
+              print("User kicked for no cursor packet sent");
+              kickWS(ws); // Remove for invalid version
+            } // Version check
           },
         );
       } // Version checking
@@ -823,6 +833,20 @@ void kickWS(WebSocketChannel ws) {
   } else {
     if (!config['silent']) print('A user wasnt kicked');
   }
+}
+
+final validIDAlphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+
+bool isValidID(String id) {
+  final chars = id.split('');
+
+  for (var char in chars) {
+    if (!validIDAlphabet.contains(char)) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 FutureOr<Response> Function(Request rq) serverThing(FutureOr<Response> Function(Request) wsHandler) {
