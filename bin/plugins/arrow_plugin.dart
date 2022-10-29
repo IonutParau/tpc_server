@@ -345,7 +345,7 @@ class ArrowPlugin {
   }
 
   void load() {
-    loadRelativeFile("main.arw");
+    loadRelativeFile("main.arrow");
   }
 
   ArrowResource import(List<ArrowResource> args, ArrowStackTrace stackTrace) {

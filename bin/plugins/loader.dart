@@ -20,7 +20,7 @@ class PluginLoader {
         return PluginType.lua;
       }
 
-      final arrowFile = File(path.join(directory.path, "main.arw"));
+      final arrowFile = File(path.join(directory.path, "main.arrow"));
 
       if (arrowFile.existsSync()) {
         return PluginType.arrow;
