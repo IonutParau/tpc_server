@@ -13,7 +13,7 @@ import 'grid.dart';
 import 'roles.dart';
 import 'plugins/plugins.dart';
 
-final v = "Release Beta 4";
+final v = "Release Beta 5";
 
 // API docs
 /*
