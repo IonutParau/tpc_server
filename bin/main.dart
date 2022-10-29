@@ -19,8 +19,8 @@ final v = "Release Beta 4";
 /*
 
 [Grid Management]
-> place <x> <y> <id> <rot> <data> - Places cell
-> bg <x> <y> <bg> - Sets background
+> place <x> <y> <id> <rot> <data> <brushSize> - Places cell
+> bg <x> <y> <bg> <brushSize> - Sets background
 > wrap - Toggles wrap mode
 > setinit <code> - Sets initial state on the server
 > toggle-invis <x> <y>
@@ -382,7 +382,10 @@ void execPacket(String data, WebSocketChannel ws) {
 
   switch (args.first) {
     case "place":
-      if (args.length != 6) {
+      if (args.length == 6) {
+        args.add("0");
+      }
+      if (args.length != 7) {
         kickWS(ws);
         break;
       }
@@ -395,22 +398,26 @@ void execPacket(String data, WebSocketChannel ws) {
         x = (x + grid.length) % grid.length;
         y = (y + grid.first.length) % grid.first.length;
       }
+      var size = int.parse(args[6]);
+      for (var cx = x - size; cx <= x + size; cx++) {
+        for (var cy = y - size; cy <= y + size; cy++) {
+          if (!insideGrid(cx, cy)) continue;
 
-      if (!insideGrid(x, y)) break;
-
-      final old = grid[x][y].copy;
-      grid[x][y].id = args[3];
-      grid[x][y].rot = int.parse(args[4]);
-      grid[x][y].data = parseCellDataStr(args[5]);
-      if (old != grid[x][y]) {
-        for (var ws in webSockets) {
-          ws.sink.add(data);
+          grid[cx][cy].id = args[3];
+          grid[cx][cy].rot = int.parse(args[4]);
+          grid[cx][cy].data = parseCellDataStr(args[5]);
         }
-        gridCache = null;
       }
+      for (var ws in webSockets) {
+        ws.sink.add(data);
+      }
+      gridCache = null;
       break;
     case "bg":
-      if (args.length != 4) {
+      if (args.length == 4) {
+        args.add("0");
+      }
+      if (args.length != 5) {
         kickWS(ws);
         break;
       }
@@ -423,17 +430,19 @@ void execPacket(String data, WebSocketChannel ws) {
         x = (x + grid.length) % grid.length;
         y = (y + grid.first.length) % grid.first.length;
       }
+      final size = int.parse(args[4]);
 
-      if (!insideGrid(x, y)) break;
+      for (var cx = x - size; cx <= x + size; cx++) {
+        for (var cy = y - size; cy <= y + size; cy++) {
+          if (!insideGrid(cx, cy)) break;
 
-      final old = grid[x][y].bg;
-      grid[x][y].bg = args[3];
-      if (old != args[3]) {
-        for (var ws in webSockets) {
-          ws.sink.add(data);
+          grid[cx][cy].bg = args[3];
         }
-        gridCache = null;
       }
+      for (var ws in webSockets) {
+        ws.sink.add(data);
+      }
+      gridCache = null;
       break;
     case "wrap":
       if (args.length != 1) {
