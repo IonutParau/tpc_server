@@ -35,9 +35,9 @@ class ArrowPlugin {
   }
 
   bool runChatCmd(String author, String cmd, List<String> args) {
-    if (termCmds[cmd] == null) return false;
+    if (chatCmds[cmd] == null) return false;
 
-    termCmds[cmd]!.call([ArrowString(author), ...args.map<ArrowResource>((e) => ArrowString(e)).toList()], vm.stackTrace, "tpc:runChatCmd", 0);
+    chatCmds[cmd]!.call([ArrowString(author), ArrowList(args.map<ArrowResource>((e) => ArrowString(e)).toList())], vm.stackTrace, "tpc:runChatCmd", 0);
 
     return true;
   }
