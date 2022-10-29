@@ -146,12 +146,12 @@ class LuaPlugin {
         notfunc = true;
         return;
       }
-      vm.pushString(ip);
       vm.newTable();
       headers.forEach((key, value) {
         vm.pushString(value);
         vm.setField(-2, key);
       });
+      vm.pushString(ip);
       vm.call(2, 1);
     }, 1);
     if (notfunc) return null;
