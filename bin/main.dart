@@ -523,7 +523,7 @@ void execPacket(String data, WebSocketChannel ws) {
         args.add("empty");
         args.add("0");
         args.add("cursor");
-        args.add(":");
+        args.add("0");
       }
 
       if (cursors[args[1]] == null) {
