@@ -7,6 +7,7 @@ class ArrowPlugin {
   ArrowPlugin(this.dir);
 
   Map<String, ArrowResource> termCmds = {};
+  Map<String, ArrowResource> chatCmds = {};
   Map<String, ArrowResource> packets = {};
 
   void onConnect(String id, String ver) {
@@ -29,6 +30,14 @@ class ArrowPlugin {
     if (termCmds[cmd] == null) return false;
 
     termCmds[cmd]!.call(args.map<ArrowResource>((e) => ArrowString(e)).toList(), vm.stackTrace, "tpc:runTermCmd", 0);
+
+    return true;
+  }
+
+  bool runChatCmd(String author, String cmd, List<String> args) {
+    if (termCmds[cmd] == null) return false;
+
+    termCmds[cmd]!.call([ArrowString(author), ...args.map<ArrowResource>((e) => ArrowString(e)).toList()], vm.stackTrace, "tpc:runChatCmd", 0);
 
     return true;
   }
@@ -110,6 +119,18 @@ class ArrowPlugin {
       if (func.type == "function") {
         print("Registering Terminal Command: $cmd");
         termCmds[cmd.string] = func;
+      }
+
+      return ArrowNull();
+    }, 2);
+
+    tpc["RegisterChatCommand"] = ArrowExternalFunction((params, stackTrace) {
+      final cmd = params[0];
+      final func = params[1];
+
+      if (func.type == "function") {
+        print("Registering Chat Command: $cmd");
+        chatCmds[cmd.string] = func;
       }
 
       return ArrowNull();

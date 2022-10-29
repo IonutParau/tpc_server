@@ -8,6 +8,7 @@ class LuaPlugin {
 
   Set<String> termCmds = {};
   Set<String> packets = {};
+  Set<String> chatCmds = {};
 
   // Collects everything but the top X elements
   void collect(LuaState state, [int off = 0]) {
@@ -113,6 +114,28 @@ class LuaPlugin {
     return false;
   }
 
+  bool runChatCmd(String author, String cmd, List<String> args) {
+    if (chatCmds.contains(cmd)) {
+      collected(vm, () {
+        vm.getGlobal("CHATCMD:$cmd");
+        vm.pushString(author);
+        vm.pushString(cmd);
+        vm.newTable();
+        var i = 0;
+        for (var arg in args) {
+          i++;
+          vm.pushInteger(i);
+          vm.pushString(arg);
+          vm.setTable(-3);
+        }
+        vm.call(3, 0);
+      });
+
+      return true;
+    }
+    return false;
+  }
+
   String? onPing(Map<String, String> headers, String? ip) {
     bool notfunc = false;
 
@@ -175,6 +198,22 @@ class LuaPlugin {
       return 0;
     });
     vm.setField(-2, "RegisterTerminalCommand");
+
+    // Register Chat Command
+    vm.pushDartFunction((ls) {
+      final id = ls.toStr(-2);
+      ls.pushValue(-1);
+
+      if (id != null) {
+        print("Registering Chat Command: $id");
+        termCmds.add(id);
+        ls.setGlobal("CHATCMD:$id");
+      }
+      ls.pop(ls.getTop());
+
+      return 0;
+    });
+    vm.setField(-2, "RegisterChatCommand");
 
     // Register Packet
     vm.pushDartFunction((ls) {

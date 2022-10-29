@@ -192,4 +192,11 @@ UserRole? getRoleStr(String role) {
   return null;
 }
 
-void runChatCmd(String runner, String cmd, List<String> args) {}
+void runChatCmd(String runner, String cmd, List<String> args) {
+  for (var plugin in pluginLoader.luaPlugins) {
+    if (plugin.runChatCmd(runner, cmd, args)) return;
+  }
+  for (var plugin in pluginLoader.arrowPlugins) {
+    if (plugin.runChatCmd(runner, cmd, args)) return;
+  }
+}
