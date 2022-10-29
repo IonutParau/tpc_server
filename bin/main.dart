@@ -671,6 +671,45 @@ void execPacket(String data, WebSocketChannel ws) {
         ws.sink.add(data);
       }
       break;
+    case "chat":
+      final jsonBlob = args.sublist(1).join(" ");
+      var shouldKick = false;
+
+      try {
+        final payload = jsonDecode(jsonBlob) as Map<String, dynamic>;
+
+        final signed = payload["author"].toString();
+        if (signed.toLowerCase() == "server") throw "User attempted to forge message as server";
+
+        final id = clientIDs[ws];
+        if (id == null) throw "Pending User tried to send message";
+        if (id == signed) {
+          for (var ows in webSockets) {
+            ows.sink.add(data);
+          }
+        } else {
+          shouldKick = true;
+          throw "User($id) attempted to forge signature of User($signed)";
+        }
+
+        final content = payload["content"].toString();
+        if (content.startsWith('/')) {
+          final cmdList = content.substring(1).split(' ');
+
+          final cmd = cmdList.first;
+          final args = cmdList.sublist(1);
+
+          runChatCmd(id, cmd, args);
+        }
+      } catch (e) {
+        ws.sink.add('chat ${jsonEncode({"author": "Server", "content": e.toString()})}');
+        print("A user sent an invalid message and an error was raised: $e");
+      }
+
+      if (shouldKick) {
+        kickWS(ws);
+      }
+      break;
     default:
       if (config['packetpass']) {
         if (!config['silent']) {

@@ -191,3 +191,5 @@ UserRole? getRoleStr(String role) {
 
   return null;
 }
+
+void runChatCmd(String runner, String cmd, List<String> args) {}
