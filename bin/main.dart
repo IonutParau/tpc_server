@@ -406,6 +406,9 @@ void execPacket(String data, WebSocketChannel ws) {
           grid[cx][cy].id = args[3];
           grid[cx][cy].rot = int.parse(args[4]);
           grid[cx][cy].data = parseCellDataStr(args[5]);
+          grid[cx][cy].invisible = false;
+          grid[cx][cy].tags = {};
+          grid[cx][cy].lifespan = 0;
         }
       }
       for (var ws in webSockets) {
