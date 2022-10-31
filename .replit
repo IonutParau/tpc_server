@@ -1,0 +1,17 @@
+run = "pub update && dart bin/main.dart --ip=zero --port=8080"
+entrypoint = "bin/main.dart"
+
+[packager]
+language = "dart-pub"
+
+[packager.features]
+packageSearch = true
+
+[languages.dart]
+pattern = "**/*.dart"
+
+[languages.dart.languageServer]
+start = ["dart", "language-server"]
+
+[nix]
+channel = "stable-21_11"
