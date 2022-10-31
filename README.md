@@ -70,7 +70,7 @@ Will show in the console all packets coming from users. Defaults to false.
 Will prevent the server from sending unknown packets to all users. This can break compatibility with some mods.
 
 `--banned_packets` flag:
-The banned packets that will make the sender get kicked seoerated by `:`. This can be done to block specific functionality
+The banned packets that will make the sender get kicked separated by `:`. This can be done to block specific functionality
 
 `--wait_time` flag:
 This can be how many milliseconds the timeout for not sending a `token` packet will be.
