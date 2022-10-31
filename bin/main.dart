@@ -847,7 +847,7 @@ void kickWS(WebSocketChannel ws) {
   }
 }
 
-final validIDAlphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+final validIDAlphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-";
 
 bool isValidID(String id) {
   final chars = id.split('');
