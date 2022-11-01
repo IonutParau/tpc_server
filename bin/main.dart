@@ -623,6 +623,8 @@ void execPacket(String data, WebSocketChannel ws) {
 
       roles[id] = defaultRole;
 
+      ws.sink.add('set-role $id ${defaultRole.toString().replaceAll('UserRole.', '')}');
+
       clientIDList.add(id);
 
       fixVersions();
