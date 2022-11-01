@@ -41,6 +41,7 @@ final v = "Release Beta 5";
 [User Management]
 > kick <uuid> - Kicks the user
 > set-role <uuid> <role> - Sets a user's role to another user
+> del-role <uuid> - Locally deletes a role, for memory management
 */
 
 var whitelist = <String>[];
@@ -623,7 +624,7 @@ void execPacket(String data, WebSocketChannel ws) {
 
       roles[id] = defaultRole;
 
-      ws.sink.add('set-role $id ${defaultRole.toString().replaceAll('UserRole.', '')}');
+      sendRoles();
 
       clientIDList.add(id);
 

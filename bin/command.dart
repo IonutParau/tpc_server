@@ -138,6 +138,7 @@ void execCmd(String cmd, List<String> args) {
     if (getRoleStr(args[0]) != null) defaultRole = getRoleStr(args[0])!;
   } else if (cmd == "set-user-role") {
     if (getRoleStr(args[1]) != null) roles[args[0]] = getRoleStr(args[1])!;
+    sendRoles();
   } else if (cmd == "user-roles") {
     roles.forEach((id, role) {
       print('$id - ${role.toString().replaceAll("UserRole.", "")}');

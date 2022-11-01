@@ -14,3 +14,11 @@ Map<String, UserRole> roles = {};
 UserRole defaultRole = UserRole.member;
 
 UserRole getRole(WebSocketChannel ws) => roles[clientIDs[ws] ?? "Unknown"] ?? defaultRole;
+
+void sendRoles() {
+  for (var ws in webSockets) {
+    roles.forEach((id, role) {
+      ws.sink.add('set-role $id ${role.toString().replaceAll('UserRole.', '')}');
+    });
+  }
+}
