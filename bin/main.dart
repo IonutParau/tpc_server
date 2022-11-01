@@ -745,10 +745,18 @@ void execPacket(String data, WebSocketChannel ws) {
       final userRole = getRole(ws);
       final otherRole = (roles[id] ?? defaultRole);
 
+      if (userRole == UserRole.member || userRole == UserRole.guest) break;
+
+      // Only owner can change admin and owner role
       if (otherRole == UserRole.owner || otherRole == UserRole.admin) {
         if (userRole != UserRole.owner) {
           break;
         }
+      }
+
+      // Only owner can promote to owner
+      if (role == UserRole.owner && userRole != UserRole.owner) {
+        break;
       }
 
       if (role == null) {
