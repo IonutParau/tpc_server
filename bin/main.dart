@@ -342,6 +342,7 @@ void removeWebsocket(WebSocketChannel ws) {
   if (!config['silent']) print('User ID: $cursorID');
   cursors.remove(cursorID);
   for (var ws in webSockets) {
+    ws.sink.add('del-role $cursorID');
     ws.sink.add('remove-cursor $cursorID');
   }
 }
