@@ -38,6 +38,9 @@ final v = "Release Beta 5";
 > set-cursor <uuid> <x> <y> <selection> <rotation> <texture> <data> - Sets cursor state
 > remove-cursor <uuid> - Removes the cursor (client only)
 
+[User Management]
+> kick <uuid> - Kicks the user
+> set-role <uuid> <role> - Sets a user's role to another user
 */
 
 var whitelist = <String>[];
@@ -727,6 +730,61 @@ void execPacket(String data, WebSocketChannel ws) {
         kickWS(ws);
       }
       break;
+    case 'set-role':
+      if (args.length != 3) {
+        kickWS(ws);
+        break;
+      }
+      final id = args[1];
+      if (!clientIDs.containsKey(id)) break;
+      final role = getRoleStr(args[2]);
+      final userRole = getRole(ws);
+      final otherRole = (roles[id] ?? defaultRole);
+
+      if (otherRole == UserRole.owner || otherRole == UserRole.admin) {
+        if (userRole != UserRole.owner) {
+          break;
+        }
+      }
+
+      if (role == null) {
+        kickWS(ws);
+        break;
+      }
+
+      roles[id] = role;
+
+      for (var ws in webSockets) {
+        ws.sink.add(data);
+      }
+
+      break;
+    case 'kick':
+      if (args.length != 2) {
+        kickWS(ws);
+        break;
+      }
+
+      final role = getRole(ws);
+
+      if (role != UserRole.admin && role != UserRole.owner) {
+        break;
+      }
+
+      final id = args[1];
+      if (clientIDs.containsKey(id)) break;
+
+      WebSocketChannel? user;
+      clientIDs.forEach((iuser, uid) {
+        if (id == uid) {
+          user = iuser;
+        }
+      });
+      if (user != null) {
+        kickWS(user!);
+      }
+
+      break;
     default:
       if (config['packetpass']) {
         if (!config['silent']) {
@@ -786,6 +844,10 @@ Future<HttpServer> createServer(String ip, int port) async {
           ws.sink.add(cursor.toPacket(id));
         },
       ); // Send cursors
+
+      roles.forEach((id, role) {
+        ws.sink.add('set-role $id ${role.toString().replaceAll('UserRole.', '')}');
+      });
 
       fixVersions();
       if (versions.isNotEmpty) {
