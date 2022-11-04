@@ -208,6 +208,20 @@ class LuaPlugin {
     vm.pushDartFunction(import);
     vm.setField(-2, "Import");
 
+    // TimeSinceEpoch
+    vm.pushDartFunction((ls) {
+      final s = ls.checkString(1);
+
+      if (s == null) {
+        ls.pushNil();
+        return 1;
+      }
+
+      ls.pushNumber(getTimeSinceEpoch(s).toDouble());
+      return 1;
+    });
+    vm.setField(-2, "TimeSinceEpoch");
+
     // Register Terminal Command
     vm.pushDartFunction((ls) {
       final id = ls.toStr(-2);

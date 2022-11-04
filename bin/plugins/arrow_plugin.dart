@@ -132,6 +132,10 @@ class ArrowPlugin {
       return ArrowNull();
     }, 2);
 
+    tpc["TimeSinceEpoch"] = ArrowExternalFunction((params, stackTrace) {
+      return ArrowNumber(getTimeSinceEpoch(params.first.string));
+    }, 1);
+
     tpc["RegisterChatCommand"] = ArrowExternalFunction((params, stackTrace) {
       final cmd = params[0];
       final func = params[1];

@@ -979,3 +979,18 @@ FutureOr<Response> Function(Request rq) serverThing(FutureOr<Response> Function(
     }
   };
 }
+
+num getTimeSinceEpoch(String unit) {
+  unit = unit.replaceAll(' ', '');
+  final date = DateTime.now();
+
+  if (unit == "ms") return date.millisecondsSinceEpoch;
+  if (unit == "us" || unit == "μs") return date.microsecondsSinceEpoch;
+  if (unit == "ns") return date.microsecondsSinceEpoch / 1000;
+  if (unit == "s") return date.millisecondsSinceEpoch / 1000;
+  if (unit == "min") return date.millisecondsSinceEpoch / 1000 / 60;
+  if (unit == "h") return date.millisecondsSinceEpoch / 1000 / 60 / 60;
+  if (unit == "d") return date.millisecondsSinceEpoch / 1000 / 60 / 60 / 24;
+
+  return 0;
+}
