@@ -84,6 +84,14 @@ class ArrowPlugin {
     return null;
   }
 
+  bool filterMessage(String author, String content) {
+    final tpc = vm.globals.get("TPC");
+
+    final func = tpc.getField("FilterMessage", vm.stackTrace, "tpc:filterMessage", 0);
+
+    return func.call([ArrowString(author), ArrowString(content)], vm.stackTrace, "tpc:filterMessage", 0).truthy;
+  }
+
   ArrowResource loadRelativeFile(String file) {
     final f = File(path.joinAll([dir.path, ...file.split('/')]));
     if (f.existsSync()) {

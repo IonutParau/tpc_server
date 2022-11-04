@@ -701,6 +701,8 @@ void execPacket(String data, WebSocketChannel ws) {
         final signed = payload["author"].toString();
         if (signed.toLowerCase() == "server") throw "User attempted to forge message as server";
 
+        final content = payload["content"].toString();
+
         final id = clientIDs[ws];
         if (id == null) throw "Pending User tried to send message";
         if (!clientIDList.contains(id)) {
@@ -708,15 +710,27 @@ void execPacket(String data, WebSocketChannel ws) {
           return;
         }
         if (id == signed) {
-          for (var ows in webSockets) {
-            ows.sink.add(data);
+          var filterOut = false;
+          for (var plugin in pluginLoader.luaPlugins) {
+            if (filterOut) break;
+            filterOut = plugin.filterMessage(id, content);
+          }
+          if (!filterOut) {
+            for (var plugin in pluginLoader.arrowPlugins) {
+              if (filterOut) break;
+              filterOut = plugin.filterMessage(id, content);
+            }
+          }
+          if (!filterOut) {
+            for (var ows in webSockets) {
+              ows.sink.add(data);
+            }
           }
         } else {
           shouldKick = true;
           throw "User($id) attempted to forge signature of User($signed)";
         }
 
-        final content = payload["content"].toString();
         if (content.startsWith('/')) {
           final cmdList = content.substring(1).split(' ');
 

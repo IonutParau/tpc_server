@@ -17,6 +17,7 @@ class LuaPlugin {
     }
   }
 
+  // Automatic memory management
   void collected(LuaState state, void Function() toRun, [int returns = 0]) {
     final start = state.getTop();
 
@@ -62,7 +63,6 @@ class LuaPlugin {
       vm.pushString(id);
       vm.pushString(packet);
       vm.call(2, 0);
-      vm.pop(vm.getTop());
     });
   }
 
@@ -163,6 +163,25 @@ class LuaPlugin {
     return null;
   }
 
+  bool filterMessage(String author, String content) {
+    bool notfunc = false;
+    collected(vm, () {
+      vm.getGlobal("TPC");
+      vm.getField(-1, "FilterMessage");
+      if (!vm.isFunction(-1)) {
+        notfunc = true;
+      }
+      vm.pushString(author);
+      vm.pushString(content);
+      vm.call(2, 1);
+    }, 1);
+
+    if (notfunc) {
+      return false;
+    }
+    return vm.toBoolean(-1);
+  }
+
   void prepare() {
     vm.openLibs();
     // TPC table
@@ -179,6 +198,12 @@ class LuaPlugin {
 
     vm.pushDartFunction((ls) => 0);
     vm.setField(-2, "onPacket");
+
+    vm.pushDartFunction((ls) {
+      ls.pushBoolean(false);
+      return 1;
+    });
+    vm.setField(-2, "FilterMessage");
 
     vm.pushDartFunction(import);
     vm.setField(-2, "Import");
