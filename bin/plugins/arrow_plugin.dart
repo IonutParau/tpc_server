@@ -117,6 +117,7 @@ class ArrowPlugin {
     tpc["onKick"] = emptyFunc;
     tpc["onDisconnect"] = emptyFunc;
     tpc["onPacket"] = emptyFunc;
+    tpc["FilterMessage"] = emptyFunc;
 
     tpc["Import"] = ArrowExternalFunction(import, 1);
 
