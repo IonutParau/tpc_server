@@ -66,13 +66,13 @@ class LuaPlugin {
     });
   }
 
-  void loadRelativeFile(String file) {
+  void loadRelativeFile(String file, [int returns = 0]) {
     final status = vm.loadFile(path.joinAll([dir.path, ...file.split('/')]));
     if (status != LuaThreadStatus.ok) {
       print("Running a plugin failed!\nFailed to load relative file: $file\nError Type: $status\nError: ${vm.toStr(-1)}");
       exit(0);
     } else {
-      vm.call(0, 0);
+      vm.call(0, returns);
     }
   }
 
@@ -199,6 +199,7 @@ class LuaPlugin {
         return 1;
       },
       "Import": import,
+      "Module": loadModule,
       "TimeSinceEpoch": (LuaState ls) {
         final s = ls.toStr(-1);
 
@@ -224,7 +225,7 @@ class LuaPlugin {
         }
 
         return 0;
-      } as LuaDartFunction,
+      },
       "RegisterChatCommand": (LuaState ls) {
         final id = ls.toStr(-2);
 
@@ -485,6 +486,17 @@ class LuaPlugin {
     api["Plugins"] = pluginsAPI;
 
     vm.makeLib("TPC", api);
+
+    final modulesF = File(path.join(dir.path, 'modules.json'));
+    if (modulesF.existsSync()) {
+      List modules = jsonDecode(modulesF.readAsStringSync());
+
+      for (var module in modules) {
+        if (module is String) {
+          loadModuleIntoVM(module);
+        }
+      }
+    }
   }
 
   void load() {
@@ -500,5 +512,17 @@ class LuaPlugin {
     }
 
     return 0;
+  }
+
+  int loadModule(LuaState ls) {
+    final m = ls.toStr(-1);
+    if (m == null) return 0;
+    loadModuleIntoVM(m);
+    return 1;
+  }
+
+  void loadModuleIntoVM(String module) {
+    loadRelativeFile("../../modules/$module.lua", 1);
+    vm.setGlobal(module);
   }
 }

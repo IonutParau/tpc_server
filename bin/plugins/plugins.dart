@@ -1,5 +1,6 @@
 library plugins;
 
+import 'dart:convert';
 import 'dart:io';
 import 'package:path/path.dart' as path;
 import '../grid.dart';
