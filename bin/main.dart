@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:args/args.dart';
 import 'package:crypto/crypto.dart';
 import 'package:dart_ipify/dart_ipify.dart';
+import 'package:lua_vm_bindings/lua_vm_bindings.dart';
 import 'package:shelf/shelf.dart';
 import 'package:shelf/shelf_io.dart' as sio;
 import 'package:shelf_web_socket/shelf_web_socket.dart';
@@ -235,6 +236,7 @@ void main(List<String> arguments) async {
   }
 
   print("Loading plugins...");
+  LuaState.loadLibLua(windows: 'dlls/lua54.dll', linux: 'dlls/liblua54.so', macos: 'dlls/liblua52.dylib');
   pluginLoader.getPluginDirs().forEach(pluginLoader.addPlugin);
   for (var plugin in pluginLoader.luaPlugins) {
     plugin.prepare();

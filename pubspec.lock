@@ -59,6 +59,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "1.1.1"
+  ffi:
+    dependency: transitive
+    description:
+      name: ffi
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "2.0.1"
   http:
     dependency: transitive
     description:
@@ -87,6 +94,15 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "0.0.4"
+  lua_vm_bindings:
+    dependency: "direct main"
+    description:
+      path: "."
+      ref: main
+      resolved-ref: be33ef5cce0f83ce5705af1db7f0a4aa24b2fc67
+      url: "https://github.com/IonutParau/lua_vm_bindings"
+    source: git
+    version: "1.0.0"
   matcher:
     dependency: transitive
     description:

@@ -4,7 +4,7 @@ class LuaPlugin {
   Directory dir;
   LuaState vm;
 
-  LuaPlugin(this.dir) : vm = LuaState.newState();
+  LuaPlugin(this.dir) : vm = LuaState();
 
   Set<String> termCmds = {};
   Set<String> packets = {};
@@ -12,19 +12,19 @@ class LuaPlugin {
 
   // Collects everything but the top X elements
   void collect(LuaState state, [int off = 0]) {
-    while (state.getTop() > off) {
-      state.remove(state.getTop() - off);
+    while (state.top > off) {
+      state.remove(state.top - off);
     }
   }
 
   // Automatic memory management
   void collected(LuaState state, void Function() toRun, [int returns = 0]) {
-    final start = state.getTop();
+    final start = state.top;
 
     toRun();
 
-    while (state.getTop() - returns > start) {
-      state.remove(state.getTop() - returns);
+    while (state.top - returns > start) {
+      state.remove(state.top - returns);
     }
   }
 
@@ -60,16 +60,19 @@ class LuaPlugin {
     collected(vm, () {
       vm.getGlobal("TPC");
       vm.getField(-1, "onPacket");
-      vm.pushString(id);
+      vm.pushString(id ?? "");
       vm.pushString(packet);
       vm.call(2, 0);
     });
   }
 
   void loadRelativeFile(String file) {
-    if (!vm.doFile(path.joinAll([dir.path, ...file.split('/')]))) {
-      print("Running a plugin failed!\nFailed to load relative file: $file");
+    final status = vm.loadFile(path.joinAll([dir.path, ...file.split('/')]));
+    if (status != LuaThreadStatus.ok) {
+      print("Running a plugin failed!\nFailed to load relative file: $file\nError Type: $status\nError: ${vm.toStr(-1)}");
       exit(0);
+    } else {
+      vm.call(0, 0);
     }
   }
 
@@ -148,14 +151,15 @@ class LuaPlugin {
       }
       vm.newTable();
       headers.forEach((key, value) {
+        vm.pushString(key);
         vm.pushString(value);
-        vm.setField(-2, key);
+        vm.setTable(-3);
       });
-      vm.pushString(ip);
+      vm.pushString(ip ?? "");
       vm.call(2, 1);
     }, 1);
     if (notfunc) return null;
-    if (vm.isString(-1)) {
+    if (vm.isStr(-1)) {
       final s = vm.toStr(-1)!;
       return s;
     }
@@ -184,382 +188,303 @@ class LuaPlugin {
 
   void prepare() {
     vm.openLibs();
-    // TPC table
-    vm.newTable();
 
-    vm.pushDartFunction((ls) => 0);
-    vm.setField(-2, "onConnect");
-
-    vm.pushDartFunction((ls) => 0);
-    vm.setField(-2, "onDisconnect");
-
-    vm.pushDartFunction((ls) => 0);
-    vm.setField(-2, "onKick");
-
-    vm.pushDartFunction((ls) => 0);
-    vm.setField(-2, "onPacket");
-
-    vm.pushDartFunction((ls) {
-      ls.pushBoolean(false);
-      return 1;
-    });
-    vm.setField(-2, "FilterMessage");
-
-    vm.pushDartFunction(import);
-    vm.setField(-2, "Import");
-
-    // TimeSinceEpoch
-    vm.pushDartFunction((ls) {
-      final s = ls.checkString(1);
-
-      if (s == null) {
-        ls.pushNil();
+    final api = <String, dynamic>{
+      "onConnect": (LuaState ls) => 0,
+      "onDisconnect": (LuaState ls) => 0,
+      "onKick": (LuaState ls) => 0,
+      "onPacket": (LuaState ls) => 0,
+      "FilterMessage": (LuaState ls) {
+        ls.pushBoolean(false);
         return 1;
-      }
+      },
+      "Import": import,
+      "TimeSinceEpoch": (LuaState ls) {
+        final s = ls.toStr(-1);
 
-      ls.pushNumber(getTimeSinceEpoch(s).toDouble());
-      return 1;
-    });
-    vm.setField(-2, "TimeSinceEpoch");
-
-    // Register Terminal Command
-    vm.pushDartFunction((ls) {
-      final id = ls.toStr(-2);
-      ls.pushValue(-1);
-
-      if (id != null) {
-        print("Registering Terminal Command: $id");
-        termCmds.add(id);
-        ls.setGlobal("TERM:$id");
-      }
-      ls.pop(ls.getTop());
-
-      return 0;
-    });
-    vm.setField(-2, "RegisterTerminalCommand");
-
-    // Register Chat Command
-    vm.pushDartFunction((ls) {
-      final id = ls.toStr(-2);
-      ls.pushValue(-1);
-
-      if (id != null) {
-        print("Registering Chat Command: $id");
-        termCmds.add(id);
-        ls.setGlobal("CHATCMD:$id");
-      }
-      ls.pop(ls.getTop());
-
-      return 0;
-    });
-    vm.setField(-2, "RegisterChatCommand");
-
-    // Register Packet
-    vm.pushDartFunction((ls) {
-      final id = ls.toStr(-2);
-      ls.pushValue(-1);
-
-      if (id != null) {
-        print("Registering Packet: $id");
-        packets.add(id);
-        ls.setGlobal("PACKET:$id");
-      }
-      ls.pop(ls.getTop());
-
-      return 0;
-    });
-    vm.setField(-2, "RegisterPacket");
-
-    // Get Current Connections
-    vm.pushDartFunction((ls) {
-      ls.newTable();
-      var i = 0;
-      for (var clientID in clientIDList) {
-        i++;
-        ls.pushInteger(i);
-        ls.pushString(clientID);
-        ls.setTable(-3);
-      }
-
-      return 1;
-    });
-    vm.setField(-2, "GetConnections");
-
-    // WS table
-    vm.newTable();
-
-    vm.pushDartFunction((ls) {
-      final id = ls.toStr(-1);
-      if (id != null) {
-        final role = roles[id];
-        if (role != null) {
-          ls.pushString(role.toString().replaceAll('UserRole.', ''));
-        }
-        ls.pushNil();
-      } else {
-        ls.pushNil();
-      }
-
-      return 1;
-    });
-    vm.setField(-2, "GetRole");
-
-    vm.pushDartFunction((ls) {
-      final id = ls.toStr(-1);
-      if (id != null) {
-        WebSocketChannel? user;
-        for (var ws in webSockets) {
-          if (clientIDs[ws] == id) {
-            user = ws;
-          }
-        }
-        if (user != null) {
-          kickWS(user);
-        }
-      }
-      ls.pop(ls.getTop());
-      return 0;
-    });
-    vm.setField(-2, "Kick");
-
-    vm.pushDartFunction((ls) {
-      final id = ls.toStr(-2);
-      final packet = ls.toStr(-1);
-      if (id != null && packet != null) {
-        WebSocketChannel? user;
-        for (var ws in webSockets) {
-          if (clientIDs[ws] == id) {
-            user = ws;
-          }
-        }
-        if (user != null) {
-          user.sink.add(packet);
-        }
-      }
-      ls.pop(ls.getTop());
-      return 0;
-    });
-    vm.setField(-2, "Send");
-
-    vm.pushDartFunction((ls) {
-      final id = ls.toStr(-1);
-
-      if (id == null) {
-        ls.pushNil();
-      } else {
-        WebSocketChannel? ws;
-        for (var webSocket in webSockets) {
-          if (clientIDs[webSocket] == id) {
-            ws = webSocket;
-          }
-        }
-        if (ws != null) {
-          ls.pushString(versionMap[ws]);
-        } else {
+        if (s == null) {
           ls.pushNil();
+          return 1;
         }
-      }
 
-      return 1;
-    });
-    vm.setField(-2, "GetClientVer");
+        ls.pushNumber(getTimeSinceEpoch(s).toDouble());
+        return 1;
+      },
+      "RegisterTerminalCommand": (LuaState ls) {
+        print([ls.type(-2), ls.type(-1)]);
 
-    vm.pushDartFunction((ls) {
-      final id = ls.toStr(-1);
-      ls.pushValue(-2);
+        final id = ls.toStr(-2);
 
-      if (id != null) {
-        WebSocketChannel? ws;
-        for (var webSocket in webSockets) {
-          if (clientIDs[webSocket] == id) {
-            ws = webSocket;
-          }
+        print(id);
+
+        if (id != null) {
+          print("Registering Terminal Command: $id");
+          termCmds.add(id);
+          ls.setGlobal("TERM:$id");
         }
-        if (ws != null) {
-          ls.getField(-2, "x");
-          final x = ls.toNumber(-1);
-          ls.getField(-2, "y");
-          final y = ls.toNumber(-1);
-          ls.getField(-2, "selection");
-          final selection = ls.toStr(-1)!;
-          ls.getField(-2, "rotation");
-          final rotation = ls.toInteger(-1) % 4;
-          ls.getField(-2, "texture");
-          final texture = ls.toStr(-1)!;
-          var cursor = ClientCursor(x, y, selection, rotation, texture, {}, ws);
-          cursors[id] = cursor;
 
-          for (var webSocket in webSockets) {
-            webSocket.sink.add(cursor.toPacket(id));
-          }
+        return 0;
+      } as LuaDartFunction,
+      "RegisterChatCommand": (LuaState ls) {
+        final id = ls.toStr(-2);
+
+        if (id != null) {
+          print("Registering Chat Command: $id");
+          termCmds.add(id);
+          ls.setGlobal("CHATCMD:$id");
         }
-      }
-      ls.pop(ls.getTop());
 
-      return 0;
-    });
-    vm.setField(-2, "SetCursor");
+        return 0;
+      },
+      "RegisterPacket": (LuaState ls) {
+        final id = ls.toStr(-2);
+        ls.pushNil();
+        ls.copy(-2, -1);
 
-    vm.pushDartFunction((ls) {
-      final id = ls.toStr(-1);
+        if (id != null) {
+          print("Registering Packet: $id");
+          packets.add(id);
+          ls.setGlobal("PACKET:$id");
+        }
 
-      if (id != null) {
-        final cursor = cursors[id];
-        if (cursor != null) {
+        return 0;
+      },
+      "GetConnections": (LuaState ls) {
+        ls.createTable(clientIDList.length, clientIDList.length);
+        var i = 0;
+        for (var clientID in clientIDList) {
+          i++;
+          ls.pushInteger(i);
+          ls.pushString(clientID);
+          ls.setTable(-3);
+        }
+
+        return 1;
+      },
+      "GetCursors": (LuaState ls) {
+        ls.newTable();
+        cursors.forEach((id, cursor) {
           ls.newTable();
 
           ls.pushNumber(cursor.x);
-          ls.setField(-2, "x");
+          ls.setField(-2, "x", -1);
+          ls.pop();
 
           ls.pushNumber(cursor.y);
-          ls.setField(-2, "y");
+          ls.setField(-2, "y", -1);
+          ls.pop();
 
           ls.pushString(cursor.selection);
-          ls.setField(-2, "selection");
+          ls.setField(-2, "selection", -1);
+          ls.pop();
 
           ls.pushInteger(cursor.rotation);
-          ls.setField(-2, "rotation");
+          ls.setField(-2, "rotation", -1);
+          ls.pop();
 
           ls.pushString(cursor.texture);
-          ls.setField(-2, "texture");
+          ls.setField(-2, "texture", -1);
+          ls.pop();
 
+          ls.setField(-2, id, -1);
+          ls.pop();
+        });
+        return 1;
+      },
+      "GetStreams": (LuaState ls) {
+        final def = ls.toStr(-1);
+        if (def != null) {
+          ls.newTable();
+          var i = 0;
+          for (var webSocket in webSockets) {
+            final id = clientIDs[webSocket] ?? def;
+            i++;
+            ls.pushInteger(i);
+            ls.pushString(id);
+            ls.setTable(-3);
+          }
           return 1;
         }
-      }
-
-      ls.pushNil();
-      return 1;
-    });
-    vm.setField(-2, "GetCursor");
-
-    // WS table
-    vm.setField(-2, "WS");
-
-    vm.pushDartFunction((ls) {
-      ls.newTable();
-      cursors.forEach((id, cursor) {
-        ls.newTable();
-
-        ls.pushNumber(cursor.x);
-        ls.setField(-2, "x");
-
-        ls.pushNumber(cursor.y);
-        ls.setField(-2, "y");
-
-        ls.pushString(cursor.selection);
-        ls.setField(-2, "selection");
-
-        ls.pushInteger(cursor.rotation);
-        ls.setField(-2, "rotation");
-
-        ls.pushString(cursor.texture);
-        ls.setField(-2, "texture");
-
-        ls.setField(-2, id);
-      });
-      return 1;
-    });
-    vm.setField(-2, "GetCursors");
-
-    vm.pushDartFunction((ls) {
-      final def = ls.toStr(-1);
-      if (def != null) {
-        ls.newTable();
-        var i = 0;
-        for (var webSocket in webSockets) {
-          final id = clientIDs[webSocket] ?? def;
-          i++;
-          ls.pushInteger(i);
-          ls.pushString(id);
-          ls.setTable(-3);
-        }
+        ls.pushNil();
+        return 1;
+      },
+      "GetServerVersion": (LuaState ls) {
+        ls.pushString(v);
         return 1;
       }
-      ls.pushNil();
-      return 1;
-    });
-    vm.setField(-2, "GetStreams");
+    };
 
-    vm.pushDartFunction((ls) {
-      ls.pushString(v);
-      return 1;
-    });
-    vm.setField(-2, "GetServerVersion");
+    final wsAPI = <String, dynamic>{
+      "GetRole": (LuaState ls) {
+        final id = ls.toStr(-1);
+        if (id != null) {
+          final role = roles[id];
+          if (role != null) {
+            ls.pushString(role.toString().replaceAll('UserRole.', ''));
+          }
+          ls.pushNil();
+        } else {
+          ls.pushNil();
+        }
 
-    // Grid table
-    vm.newTable();
+        return 1;
+      },
+      "Kick": (LuaState ls) {
+        final id = ls.toStr(-1);
+        if (id != null) {
+          WebSocketChannel? user;
+          for (var ws in webSockets) {
+            if (clientIDs[ws] == id) {
+              user = ws;
+            }
+          }
+          if (user != null) {
+            kickWS(user);
+          }
+        }
+        return 0;
+      },
+      "Send": (LuaState ls) {
+        final id = ls.toStr(-2);
+        final packet = ls.toStr(-1);
+        if (id != null && packet != null) {
+          WebSocketChannel? user;
+          for (var ws in webSockets) {
+            if (clientIDs[ws] == id) {
+              user = ws;
+            }
+          }
+          if (user != null) {
+            user.sink.add(packet);
+          }
+        }
+        return 0;
+      },
+      "GetClientVer": (LuaState ls) {
+        final id = ls.toStr(-1);
 
-    vm.pushDartFunction((ls) {
-      gridCache ??= SavingFormat.encodeGrid();
+        if (id == null) {
+          ls.pushNil();
+        } else {
+          WebSocketChannel? ws;
+          for (var webSocket in webSockets) {
+            if (clientIDs[webSocket] == id) {
+              ws = webSocket;
+            }
+          }
+          if (ws != null) {
+            ls.pushString(versionMap[ws] ?? "");
+          } else {
+            ls.pushNil();
+          }
+        }
 
-      ls.pushString(gridCache);
+        return 1;
+      },
+      "SetCursor": (LuaState ls) {
+        final id = ls.toStr(-2);
 
-      return 1;
-    });
+        if (id != null) {
+          WebSocketChannel? ws;
+          for (var webSocket in webSockets) {
+            if (clientIDs[webSocket] == id) {
+              ws = webSocket;
+            }
+          }
+          if (ws != null) {
+            ls.getField(-2, "x");
+            final x = ls.toNumber(-1);
+            ls.getField(-2, "y");
+            final y = ls.toNumber(-1);
+            ls.getField(-2, "selection");
+            final selection = ls.toStr(-1)!;
+            ls.getField(-2, "rotation");
+            final rotation = ls.toInteger(-1) % 4;
+            ls.getField(-2, "texture");
+            final texture = ls.toStr(-1)!;
+            var cursor = ClientCursor(x, y, selection, rotation, texture, {}, ws);
+            cursors[id] = cursor;
 
-    vm.setField(-2, "Code");
+            for (var webSocket in webSockets) {
+              webSocket.sink.add(cursor.toPacket(id));
+            }
+          }
+        }
 
-    // Grid table
-    vm.setField(-2, "Grid");
+        return 0;
+      },
+      "GetCursor": (LuaState ls) {
+        final id = ls.toStr(-1);
 
-    // Plugins table
-    vm.newTable();
+        if (id != null) {
+          final cursor = cursors[id];
+          if (cursor != null) {
+            ls.newTable();
 
-    // Amount table
-    vm.newTable();
+            ls.pushNumber(cursor.x);
+            ls.setField(-2, "x", -1);
+            ls.pop(1);
 
-    vm.pushDartFunction((ls) {
-      vm.pushInteger(pluginLoader.arrowPlugins.length);
-      return 1;
-    });
-    vm.setField(-2, "Arrow");
+            ls.pushNumber(cursor.y);
+            ls.setField(-2, "y", -1);
+            ls.pop();
 
-    vm.pushDartFunction((ls) {
-      vm.pushInteger(pluginLoader.luaPlugins.length);
-      return 1;
-    });
-    vm.setField(-2, "Lua");
+            ls.pushString(cursor.selection);
+            ls.setField(-2, "selection", -1);
+            ls.pop();
 
-    // Amount table
-    vm.setField(-2, "Amount");
+            ls.pushInteger(cursor.rotation);
+            ls.setField(-2, "rotation", -1);
+            ls.pop();
 
-    // ByName table
-    vm.newTable();
+            ls.pushString(cursor.texture);
+            ls.setField(-2, "texture", -1);
+            ls.pop();
 
-    vm.pushDartFunction((ls) {
-      var i = 0;
-      ls.newTable();
-      for (var plugin in pluginLoader.arrowPlugins) {
-        i++;
-        ls.pushInteger(i);
-        ls.pushString(path.split(plugin.dir.path).last);
-        ls.setTable(-3);
-      }
-      return 1;
-    });
-    vm.setField(-2, "Arrow");
+            return 1;
+          }
+        }
 
-    vm.pushDartFunction((ls) {
-      var i = 0;
-      ls.newTable();
-      for (var plugin in pluginLoader.luaPlugins) {
-        i++;
-        ls.pushInteger(i);
-        ls.pushString(path.split(plugin.dir.path).last);
-        ls.setTable(-3);
-      }
-      return 1;
-    });
-    vm.setField(-2, "Lua");
+        ls.pushNil();
+        return 1;
+      },
+    };
 
-    // ByName table
-    vm.setField(-2, "ByName");
+    api["WS"] = wsAPI;
 
-    // Plugins table
-    vm.setField(-2, "Plugins");
+    api["Grid"] = <String, dynamic>{
+      "Code": (LuaState ls) {
+        gridCache ??= SavingFormat.encodeGrid();
 
-    // TPC table
-    vm.setGlobal("TPC");
+        ls.pushString(gridCache!);
+
+        return 1;
+      },
+    };
+
+    final pluginsAPI = <String, dynamic>{
+      "Count": (LuaState ls) {
+        ls.pushInteger(pluginLoader.luaPlugins.length);
+        return 1;
+      },
+      "Names": (LuaState ls) {
+        ls.createTable(pluginLoader.luaPlugins.length, pluginLoader.luaPlugins.length);
+
+        int i = 0;
+        for (var luaPlugin in pluginLoader.luaPlugins) {
+          i++;
+          ls.pushInteger(i);
+          ls.pushString(path.split(luaPlugin.dir.path).last);
+          ls.setTable(-3);
+        }
+
+        return 1;
+      },
+    };
+
+    api["Plugins"] = pluginsAPI;
+
+    vm.makeLib("TPC", api);
   }
 
   void load() {
@@ -567,7 +492,7 @@ class LuaPlugin {
   }
 
   int import(LuaState ls) {
-    final p = ls.toString2(1);
+    final p = ls.toStr(-1);
     if (p == null) return 0;
     final f = File(path.join(dir.path, p));
     if (f.existsSync()) {
