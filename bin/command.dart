@@ -176,9 +176,6 @@ void execCmd(String cmd, List<String> args) {
     for (var plugin in pluginLoader.luaPlugins) {
       if (plugin.runTermCmd(cmd, args)) return;
     }
-    for (var plugin in pluginLoader.arrowPlugins) {
-      if (plugin.runTermCmd(cmd, args)) return;
-    }
     print("Unknown command $cmd");
   }
 }
@@ -195,9 +192,6 @@ UserRole? getRoleStr(String role) {
 
 void runChatCmd(String runner, String cmd, List<String> args) {
   for (var plugin in pluginLoader.luaPlugins) {
-    if (plugin.runChatCmd(runner, cmd, args)) return;
-  }
-  for (var plugin in pluginLoader.arrowPlugins) {
     if (plugin.runChatCmd(runner, cmd, args)) return;
   }
 }

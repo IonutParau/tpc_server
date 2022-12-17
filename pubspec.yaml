@@ -14,10 +14,6 @@ dependencies:
   quiver: ^3.1.0
   shelf: ^1.2.0
   shelf_web_socket: ^1.0.1
-  arrow_lang:
-    git:
-      url: https://github.com/IonutParau/arrow_lang
-      ref: stable
   lua_vm_bindings:
     git:
       url: https://github.com/IonutParau/lua_vm_bindings

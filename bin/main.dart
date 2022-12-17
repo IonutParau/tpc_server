@@ -242,10 +242,6 @@ void main(List<String> arguments) async {
     plugin.prepare();
     plugin.load();
   }
-  for (var plugin in pluginLoader.arrowPlugins) {
-    plugin.prepare();
-    plugin.load();
-  }
 
   Future.delayed(Duration(milliseconds: 500)).then(
     (v) => setupCommandIso(),
@@ -329,9 +325,6 @@ void removeWebsocket(WebSocketChannel ws) {
     for (var plugin in pluginLoader.luaPlugins) {
       plugin.onDisconnect(id);
     }
-    for (var plugin in pluginLoader.arrowPlugins) {
-      plugin.onDisconnect(id);
-    }
   }
   if (!config['silent']) print('User left');
   ws.sink.close();
@@ -381,9 +374,6 @@ void execPacket(String data, WebSocketChannel ws) {
 
   final id = clientIDs[ws];
   for (var plugin in pluginLoader.luaPlugins) {
-    plugin.onPacket(id, data);
-  }
-  for (var plugin in pluginLoader.arrowPlugins) {
     plugin.onPacket(id, data);
   }
 
@@ -644,9 +634,6 @@ void execPacket(String data, WebSocketChannel ws) {
         for (var plugins in pluginLoader.luaPlugins) {
           plugins.onConnect(id, v);
         }
-        for (var plugins in pluginLoader.arrowPlugins) {
-          plugins.onConnect(id, v);
-        }
       } else if (versions.isEmpty) {
         versionMap[ws] = fv;
         clientIDs[ws] = id;
@@ -654,9 +641,6 @@ void execPacket(String data, WebSocketChannel ws) {
           print("A new user has joined. ID: $id. Version: $v");
         }
         for (var plugins in pluginLoader.luaPlugins) {
-          plugins.onConnect(id, v);
-        }
-        for (var plugins in pluginLoader.arrowPlugins) {
           plugins.onConnect(id, v);
         }
       } else if (versions.isNotEmpty) {
@@ -671,9 +655,6 @@ void execPacket(String data, WebSocketChannel ws) {
           print("A new user has joined. ID: $id. Version: $v");
         }
         for (var plugins in pluginLoader.luaPlugins) {
-          plugins.onConnect(id, v);
-        }
-        for (var plugins in pluginLoader.arrowPlugins) {
           plugins.onConnect(id, v);
         }
       }
@@ -716,12 +697,6 @@ void execPacket(String data, WebSocketChannel ws) {
           for (var plugin in pluginLoader.luaPlugins) {
             if (filterOut) break;
             filterOut = plugin.filterMessage(id, content);
-          }
-          if (!filterOut) {
-            for (var plugin in pluginLoader.arrowPlugins) {
-              if (filterOut) break;
-              filterOut = plugin.filterMessage(id, content);
-            }
           }
           if (!filterOut) {
             for (var ows in webSockets) {
@@ -926,9 +901,6 @@ void kickWS(WebSocketChannel ws) {
       for (var plugin in pluginLoader.luaPlugins) {
         plugin.onDisconnect(id);
       }
-      for (var plugin in pluginLoader.arrowPlugins) {
-        plugin.onDisconnect(id);
-      }
     }
     removeWebsocket(ws);
     if (!config['silent']) print('A user has been kicked');
@@ -968,10 +940,6 @@ FutureOr<Response> Function(Request rq) serverThing(FutureOr<Response> Function(
 
     if (rq.method != "GET") {
       for (var plugin in pluginLoader.luaPlugins) {
-        final res = plugin.onPing(rq.headers, ip);
-        if (res != null) return Future<Response>.value(Response.ok(res));
-      }
-      for (var plugin in pluginLoader.arrowPlugins) {
         final res = plugin.onPing(rq.headers, ip);
         if (res != null) return Future<Response>.value(Response.ok(res));
       }

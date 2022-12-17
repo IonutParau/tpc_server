@@ -8,7 +8,6 @@ enum PluginType {
 
 class PluginLoader {
   final luaPlugins = <LuaPlugin>[];
-  final arrowPlugins = <ArrowPlugin>[];
 
   final pluginDir = Directory('plugins');
 
@@ -34,9 +33,6 @@ class PluginLoader {
     final type = getPluginType(directory);
     if (type == PluginType.lua) {
       luaPlugins.add(LuaPlugin(directory));
-    }
-    if (type == PluginType.arrow) {
-      arrowPlugins.add(ArrowPlugin(directory));
     }
   }
 
