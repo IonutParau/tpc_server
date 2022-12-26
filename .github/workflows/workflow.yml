@@ -8,6 +8,7 @@ jobs:
       - uses: DanTup/gh-actions/setup-dart@master
       - run: dart pub get
       - run: dart compile exe bin/main.dart -v -o "build/Windows.exe"
+      - run: move "dlls\lua54.dll" "build\dlls\lua54.dll"
       - uses: actions/upload-artifact@v1
         with:
           name: WindowsExe
@@ -19,6 +20,7 @@ jobs:
       - uses: DanTup/gh-actions/setup-dart@master
       - run: dart pub get
       - run: dart compile exe bin/main.dart -v -o "build/Linux.ext"
+      - run: mv dlls/liblua54.so build/dlls/liblua54.so
       - uses: actions/upload-artifact@v1
         with:
           name: LinuxExt
@@ -30,6 +32,7 @@ jobs:
       - uses: DanTup/gh-actions/setup-dart@master
       - run: dart pub get
       - run: dart compile exe bin/main.dart -v -o "build/MacOS.ext"
+      - run: mv dlls/liblua52.dylib build/dlls/liblua52.dylib
       - uses: actions/upload-artifact@v1
         with:
           name: MacOSExt

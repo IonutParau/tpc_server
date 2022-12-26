@@ -1,8 +1,8 @@
 name: tpc_server
 # homepage: https://www.example.com
 environment:
-  # replit uses version 2.14.3 so we downgrade sdk requirements to support it
-  sdk: ">=2.14.3 <3.0.0"
+  # replit uses version 2.17.0 so we downgrade sdk requirements to support it
+  sdk: ">=2.17.0 <3.0.0"
 
 dependencies:
   args: ^2.3.0
