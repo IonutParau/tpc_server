@@ -15,7 +15,7 @@ import 'packets.dart';
 import 'roles.dart';
 import 'plugins/plugins.dart';
 
-final v = "Release Beta 5";
+final v = "Release Beta 6";
 
 // API docs
 /*
