@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 import 'main.dart';
@@ -18,7 +20,11 @@ UserRole getRole(WebSocketChannel ws) => roles[clientIDs[ws] ?? "Unknown"] ?? de
 void sendRoles() {
   for (var ws in webSockets) {
     roles.forEach((id, role) {
-      ws.sink.add('set-role $id ${role.toString().replaceAll('UserRole.', '')}');
+      ws.sink.add(jsonEncode({
+        "pt": "set-role",
+        "id": id,
+        "role": role.toString().replaceAll('UserRole.', ''),
+      }));
     });
   }
 }

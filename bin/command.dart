@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'grid.dart';
@@ -54,7 +55,14 @@ void execCmd(String cmd, List<String> args) {
     grid[x][y].id = id;
     grid[x][y].rot = rot;
     for (var ws in webSockets) {
-      ws.sink.add('place $x $y $id $rot ${args[4]}');
+      ws.sink.add(jsonEncode({
+        "pt": "place",
+        "x": x,
+        "y": y,
+        "id": id,
+        "rot": rot,
+        "data": data,
+      }));
     }
     gridCache = null;
   } else if (cmd == "set-bg") {
@@ -66,13 +74,18 @@ void execCmd(String cmd, List<String> args) {
 
     grid[x][y].bg = id;
     for (var ws in webSockets) {
-      ws.sink.add('bg $x $y $id');
+      ws.sink.add(jsonEncode({
+        "pt": "bg",
+        "x": x,
+        "y": y,
+        "id": id,
+      }));
     }
     gridCache = null;
   } else if (cmd == "toggle-wrap") {
     wrap = !wrap;
     for (var ws in webSockets) {
-      ws.sink.add("wrap");
+      ws.sink.add(jsonEncode({"pt": "wrap", "v": wrap}));
     }
     print("Toogled wrap mode (${wrap ? "ON" : "OFF"})");
     gridCache = null;
@@ -80,7 +93,10 @@ void execCmd(String cmd, List<String> args) {
     if (gridCache != args.join(" ")) {
       loadStr(args.join(" "));
       for (var ws in webSockets) {
-        ws.sink.add('setinit ' + args.join(" "));
+        ws.sink.add(jsonEncode({
+          "pt": "setinit",
+          "code": args.join(" "),
+        }));
       }
       gridCache = args.join(" ");
     }

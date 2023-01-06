@@ -11,6 +11,7 @@ import 'package:shelf_web_socket/shelf_web_socket.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'command.dart';
 import 'grid.dart';
+import 'packets.dart';
 import 'roles.dart';
 import 'plugins/plugins.dart';
 
@@ -287,8 +288,9 @@ class CellHover {
   double y;
   String id;
   int rot;
+  Map<String, dynamic> data;
 
-  CellHover(this.x, this.y, this.id, this.rot);
+  CellHover(this.x, this.y, this.id, this.rot, this.data);
 }
 
 final Map<String, CellHover> hovers = {};
@@ -308,7 +310,15 @@ class ClientCursor {
   ClientCursor(this.x, this.y, this.selection, this.rotation, this.texture, this.data, this.author);
 
   String toPacket(String id) {
-    return 'set-cursor $id $x $y $selection $rotation $texture ${cellDataStr(data)}';
+    return jsonEncode({
+      "id": id,
+      "x": x,
+      "y": y,
+      "selection": selection,
+      "rot": rotation,
+      "texture": texture,
+      "data": data,
+    });
   }
 }
 
@@ -348,461 +358,6 @@ String? latestIP = "";
 final ipMap = <WebSocketChannel, String>{};
 final bannedIps = <String>{};
 
-void execPacket(String data, WebSocketChannel ws) {
-  if (!webSockets.contains(ws)) return;
-
-  if (config['log']) {
-    print('Packet from ${clientIDs[ws] ?? "Unknown"} > $data');
-  }
-
-  final args = data.split(' ');
-
-  final typeBasedPackets = [];
-
-  if (type == ServerType.level) {
-    typeBasedPackets.addAll([
-      "bg",
-      "wrap",
-    ]);
-  }
-
-  if (bannedPackets.contains(args.first) || typeBasedPackets.contains(args.first)) {
-    print('Kicking user for sending banned packet ${args.first}');
-    kickWS(ws);
-    return;
-  }
-
-  final id = clientIDs[ws];
-  for (var plugin in pluginLoader.luaPlugins) {
-    plugin.onPacket(id, data);
-  }
-
-  switch (args.first) {
-    case "place":
-      if (args.length == 6) {
-        args.add("0");
-      }
-      if (args.length != 7) {
-        kickWS(ws);
-        break;
-      }
-      if (getRole(ws) == UserRole.guest) {
-        break;
-      }
-      var x = int.parse(args[1]);
-      var y = int.parse(args[2]);
-      if (wrap) {
-        x = (x + grid.length) % grid.length;
-        y = (y + grid.first.length) % grid.first.length;
-      }
-      var size = int.parse(args[6]);
-      for (var cx = x - size; cx <= x + size; cx++) {
-        for (var cy = y - size; cy <= y + size; cy++) {
-          if (!insideGrid(cx, cy)) continue;
-
-          grid[cx][cy].id = args[3];
-          grid[cx][cy].rot = int.parse(args[4]);
-          grid[cx][cy].data = parseCellDataStr(args[5]);
-          grid[cx][cy].invisible = false;
-          grid[cx][cy].tags = {};
-          grid[cx][cy].lifespan = 0;
-        }
-      }
-      for (var ws in webSockets) {
-        ws.sink.add(data);
-      }
-      gridCache = null;
-      break;
-    case "bg":
-      if (args.length == 4) {
-        args.add("0");
-      }
-      if (args.length != 5) {
-        kickWS(ws);
-        break;
-      }
-      if (getRole(ws) == UserRole.guest) {
-        break;
-      }
-      var x = int.parse(args[1]);
-      var y = int.parse(args[2]);
-      if (wrap) {
-        x = (x + grid.length) % grid.length;
-        y = (y + grid.first.length) % grid.first.length;
-      }
-      final size = int.parse(args[4]);
-
-      for (var cx = x - size; cx <= x + size; cx++) {
-        for (var cy = y - size; cy <= y + size; cy++) {
-          if (!insideGrid(cx, cy)) break;
-
-          grid[cx][cy].bg = args[3];
-        }
-      }
-      for (var ws in webSockets) {
-        ws.sink.add(data);
-      }
-      gridCache = null;
-      break;
-    case "wrap":
-      if (args.length != 1) {
-        kickWS(ws);
-        break;
-      }
-      if (getRole(ws) == UserRole.guest) {
-        break;
-      }
-      wrap = !wrap;
-      for (var ows in webSockets) {
-        ows.sink.add(data);
-      }
-      gridCache = null;
-      break;
-    case "setinit":
-      if (getRole(ws) == UserRole.guest) {
-        //ws.sink.add('drop-hover ${args[1]}');
-        break;
-      }
-      if (gridCache != args[1]) {
-        loadStr(args[1]);
-        for (var ws in webSockets) {
-          ws.sink.add(data);
-        }
-        gridCache = args[1];
-      }
-      break;
-    case "new-hover":
-      if (args.length <= 6) {
-        kickWS(ws);
-        break;
-      }
-      if (getRole(ws) == UserRole.guest) {
-        break;
-      }
-      hovers[args[1]] = CellHover(
-        double.parse(args[2]),
-        double.parse(args[3]),
-        args[4],
-        int.parse(
-          args[5],
-        ),
-      );
-      for (var ws in webSockets) {
-        ws.sink.add(data);
-      }
-      break;
-    case "set-hover":
-      if (args.length != 4) {
-        kickWS(ws);
-        break;
-      }
-      if (getRole(ws) == UserRole.guest) {
-        break;
-      }
-      hovers[args[1]]!.x = double.parse(args[2]);
-      hovers[args[1]]!.y = double.parse(args[3]);
-      for (var ws in webSockets) {
-        ws.sink.add(data);
-      }
-      break;
-    case "drop-hover":
-      if (args.length != 2) {
-        kickWS(ws);
-        break;
-      }
-      if (getRole(ws) == UserRole.guest) {
-        break;
-      }
-      hovers.remove(args[1]);
-      for (var ws in webSockets) {
-        ws.sink.add(data);
-      }
-      break;
-    case "set-cursor":
-      if (args.length != 7 && args.length != 8 && args.length != 4) {
-        kickWS(ws);
-        break;
-      }
-      if (args[1] != clientIDs[ws]) break;
-
-      if (args.length == 7) {
-        args.add(":");
-      }
-      if (args.length == 4) {
-        args.add("empty");
-        args.add("0");
-        args.add("cursor");
-        args.add("0");
-      }
-
-      if (cursors[args[1]] == null) {
-        cursors[args[1]] = ClientCursor(
-          double.parse(args[2]),
-          double.parse(args[3]),
-          args[4],
-          int.parse(args[5]),
-          args[6],
-          parseCellDataStr(args[7]),
-          ws,
-        );
-        if (!config['silent']) {
-          print('New cursor created. Client ID: ${args[1]}');
-        }
-      } else {
-        cursors[args[1]]!.x = double.parse(args[2]);
-        cursors[args[1]]!.y = double.parse(args[3]);
-      }
-      for (var ws in webSockets) {
-        ws.sink.add(data);
-      }
-      break;
-    case "token":
-      if (clientIDs[ws] != null) return;
-      final tokenJSON = jsonDecode(args.sublist(1).join(" "));
-      final v = tokenJSON["version"];
-      if (v is! String) {
-        kickWS(ws);
-        break;
-      }
-      final id = tokenJSON["clientID"];
-      if (id is! String) {
-        kickWS(ws);
-        break;
-      }
-
-      if (id.length > 500 || !isValidID(id)) {
-        kickWS(ws);
-        break;
-      }
-
-      if (clientIDList.contains(id)) {
-        if (!config['silent']) {
-          print("A user attempted to connect with duplicate ID");
-        }
-        kickWS(ws);
-        break;
-      }
-      if (whitelist.isNotEmpty) {
-        if (whitelist.contains(id)) {
-          if (!config['silent']) {
-            print("User with whitelisted ID: $id has joined.");
-          }
-        } else {
-          print("User attempted to join with blocked ID");
-          kickWS(ws);
-          break;
-        }
-      }
-
-      if (blacklist.isNotEmpty) {
-        if (blacklist.contains(id)) {
-          if (!config['silent']) {
-            print("User attempted to join with a blocked ID");
-          }
-          kickWS(ws);
-          break;
-        }
-      }
-
-      if (config['block_uuid'] || uuidBl) {
-        if (!config['silent']) {
-          print('UUID blocking is enabled, validating ID...');
-        }
-        if (id.split('-').length == 5) {
-          if (!config['silent']) print('Blocked ID $id');
-          kickWS(ws);
-          break;
-        }
-      }
-
-      roles[id] = defaultRole;
-
-      sendRoles();
-
-      clientIDList.add(id);
-
-      fixVersions();
-
-      final fv = fixVersion(v);
-
-      if (versions.contains(fv)) {
-        versionMap[ws] = fv;
-        clientIDs[ws] = id;
-        if (!config['silent']) {
-          print("A new user has joined. ID: $id. Version: $v");
-        }
-        for (var plugins in pluginLoader.luaPlugins) {
-          plugins.onConnect(id, v);
-        }
-      } else if (versions.isEmpty) {
-        versionMap[ws] = fv;
-        clientIDs[ws] = id;
-        if (!config['silent']) {
-          print("A new user has joined. ID: $id. Version: $v");
-        }
-        for (var plugins in pluginLoader.luaPlugins) {
-          plugins.onConnect(id, v);
-        }
-      } else if (versions.isNotEmpty) {
-        if (!config['silent']) {
-          print("A user has joined with incompatible version");
-        }
-        kickWS(ws);
-      } else {
-        versionMap[ws] = fv;
-        clientIDs[ws] = id;
-        if (!config['silent']) {
-          print("A new user has joined. ID: $id. Version: $v");
-        }
-        for (var plugins in pluginLoader.luaPlugins) {
-          plugins.onConnect(id, v);
-        }
-      }
-      break;
-    case "toggle-invis":
-      if (args.length != 3) {
-        kickWS(ws);
-        break;
-      }
-      final x = int.parse(args[1]);
-      final y = int.parse(args[2]);
-
-      if (insideGrid(x, y)) {
-        grid[x][y].invisible = !grid[x][y].invisible;
-      }
-      for (var ws in webSockets) {
-        ws.sink.add(data);
-      }
-      break;
-    case "chat":
-      final jsonBlob = args.sublist(1).join(" ");
-      var shouldKick = false;
-
-      try {
-        final payload = jsonDecode(jsonBlob) as Map<String, dynamic>;
-
-        final signed = payload["author"].toString();
-        if (signed.toLowerCase() == "server") throw "User attempted to forge message as server";
-
-        final content = payload["content"].toString();
-
-        final id = clientIDs[ws];
-        if (id == null) throw "Pending User tried to send message";
-        if (!clientIDList.contains(id)) {
-          shouldKick;
-          return;
-        }
-        if (id == signed) {
-          var filterOut = false;
-          for (var plugin in pluginLoader.luaPlugins) {
-            if (filterOut) break;
-            filterOut = plugin.filterMessage(id, content);
-          }
-          if (!filterOut) {
-            for (var ows in webSockets) {
-              ows.sink.add(data);
-            }
-          }
-        } else {
-          shouldKick = true;
-          throw "User($id) attempted to forge signature of User($signed)";
-        }
-
-        if (content.startsWith('/')) {
-          final cmdList = content.substring(1).split(' ');
-
-          final cmd = cmdList.first;
-          final args = cmdList.sublist(1);
-
-          runChatCmd(id, cmd, args);
-        }
-      } catch (e) {
-        ws.sink.add('chat ${jsonEncode({"author": "Server", "content": e.toString()})}');
-        print("A user sent an invalid message and an error was raised: $e");
-      }
-
-      if (shouldKick) {
-        kickWS(ws);
-      }
-      break;
-    case 'set-role':
-      if (args.length != 3) {
-        kickWS(ws);
-        break;
-      }
-      final id = args[1];
-      if (!clientIDs.containsKey(id)) break;
-      final role = getRoleStr(args[2]);
-      final userRole = getRole(ws);
-      final otherRole = (roles[id] ?? defaultRole);
-
-      if (userRole == UserRole.member || userRole == UserRole.guest) break;
-
-      // Only owner can change admin and owner role
-      if (otherRole == UserRole.owner || otherRole == UserRole.admin) {
-        if (userRole != UserRole.owner) {
-          break;
-        }
-      }
-
-      // Only owner can promote to owner
-      if (role == UserRole.owner && userRole != UserRole.owner) {
-        break;
-      }
-
-      if (role == null) {
-        kickWS(ws);
-        break;
-      }
-
-      roles[id] = role;
-
-      for (var ws in webSockets) {
-        ws.sink.add(data);
-      }
-
-      break;
-    case 'kick':
-      if (args.length != 2) {
-        kickWS(ws);
-        break;
-      }
-
-      final role = getRole(ws);
-
-      if (role != UserRole.admin && role != UserRole.owner) {
-        break;
-      }
-
-      final id = args[1];
-      if (clientIDs.containsKey(id)) break;
-
-      WebSocketChannel? user;
-      clientIDs.forEach((iuser, uid) {
-        if (id == uid) {
-          user = iuser;
-        }
-      });
-      if (user != null) {
-        kickWS(user!);
-      }
-
-      break;
-    default:
-      if (config['packetpass']) {
-        if (!config['silent']) {
-          print(
-            'Randomly got invalid packet $data. Sending to other clients.',
-          );
-        }
-        for (var ws in webSockets) {
-          ws.sink.add(data);
-        }
-      }
-      break;
-  }
-}
-
 Future<HttpServer> createServer(String ip, int port) async {
   final ws = webSocketHandler(
     (WebSocketChannel ws) {
@@ -826,17 +381,26 @@ Future<HttpServer> createServer(String ip, int port) async {
 
       // Send grid
       gridCache ??= SavingFormat.encodeGrid(); // Speeeeeed
-      ws.sink.add('grid $gridCache'); // Send to client
+      ws.sink.add(jsonEncode({
+        "pt": "grid",
+        "code": gridCache,
+      })); // Send to client
 
       if (type == ServerType.level) {
-        ws.sink.add(
-          'edtype puzzle',
-        ); // Send special editor type
+        ws.sink.add(jsonEncode({"pt": "edtype", "et": "puzzle"})); // Send special editor type
 
         hovers.forEach(
           (uuid, hover) {
             ws.sink.add(
-              'new-hover $uuid ${hover.x} ${hover.y} ${hover.id} ${hover.rot}',
+              jsonEncode({
+                "pt": "new-hover",
+                "uuid": uuid,
+                "x": hover.x,
+                "y": hover.y,
+                "id": hover.id,
+                "rot": hover.rot,
+                "data": hover.data,
+              }),
             );
           },
         ); // Send hovering cells
@@ -849,7 +413,11 @@ Future<HttpServer> createServer(String ip, int port) async {
       ); // Send cursors
 
       roles.forEach((id, role) {
-        ws.sink.add('set-role $id ${role.toString().replaceAll('UserRole.', '')}');
+        ws.sink.add(jsonEncode({
+          "pt": "set-role",
+          "id": id,
+          "role": role.toString().replaceAll('UserRole.', ''),
+        }));
       });
 
       fixVersions();
