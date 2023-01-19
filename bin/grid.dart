@@ -652,7 +652,7 @@ class P4 {
   }
 }
 
-typedef SavingFormat = P5;
+typedef SavingFormat = P6;
 
 class P5 {
   static final String valueString = r"0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ+-.={}";
