@@ -1,4 +1,4 @@
-run = "pub update && dart bin/main.dart --ip=zero --port=8080"
+run = "dart pub update && dart bin/main.dart --ip=zero --port=8080"
 entrypoint = "bin/main.dart"
 
 [packager]
@@ -14,4 +14,4 @@ pattern = "**/*.dart"
 start = ["dart", "language-server"]
 
 [nix]
-channel = "stable-21_11"
+channel = "stable-22_11"
