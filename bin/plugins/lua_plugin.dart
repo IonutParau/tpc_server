@@ -231,7 +231,7 @@ class LuaPlugin {
 
         if (id != null) {
           print("Registering Chat Command: $id");
-          termCmds.add(id);
+          chatCmds.add(id);
           ls.setGlobal("CHATCMD:$id");
         }
 
