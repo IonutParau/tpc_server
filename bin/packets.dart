@@ -464,6 +464,8 @@ void legacyExecPacket(String data, WebSocketChannel ws) {
 void execPacket(String data, WebSocketChannel sender) {
   if (!(data.startsWith('{') && data.endsWith('}'))) return legacyExecPacket(data, sender);
 
+  final dataStr = data;
+
   if (!webSockets.contains(sender)) return;
 
   if (config['log']) {
@@ -508,7 +510,7 @@ void execPacket(String data, WebSocketChannel sender) {
         }
       }
       for (var ws in webSockets) {
-        ws.sink.add(data);
+        ws.sink.add(dataStr);
       }
       gridCache = null;
     }
@@ -530,14 +532,14 @@ void execPacket(String data, WebSocketChannel sender) {
         }
       }
       for (var ws in webSockets) {
-        ws.sink.add(data);
+        ws.sink.add(dataStr);
       }
       gridCache = null;
     }
     if (packetType == "wrap") {
       wrap = packet["v"] as bool;
       for (var ws in webSockets) {
-        ws.sink.add(data);
+        ws.sink.add(dataStr);
       }
       gridCache = null;
     }
@@ -547,7 +549,7 @@ void execPacket(String data, WebSocketChannel sender) {
       if (gridCache == levelCode) return;
       loadStr(levelCode);
       for (var ws in webSockets) {
-        ws.sink.add(data);
+        ws.sink.add(dataStr);
       }
       gridCache = null;
     }
@@ -562,7 +564,7 @@ void execPacket(String data, WebSocketChannel sender) {
 
       hovers[uuid] = CellHover(x, y, id, rot, data);
       for (var ws in webSockets) {
-        ws.sink.add(data);
+        ws.sink.add(dataStr);
       }
     }
     if (packetType == "set-hover") {
@@ -574,7 +576,7 @@ void execPacket(String data, WebSocketChannel sender) {
       hovers[uuid]?.x = x;
       hovers[uuid]?.y = y;
       for (var ws in webSockets) {
-        ws.sink.add(data);
+        ws.sink.add(dataStr);
       }
     }
     if (packetType == "drop-hover") {
@@ -583,7 +585,7 @@ void execPacket(String data, WebSocketChannel sender) {
 
       hovers.remove(uuid);
       for (var ws in webSockets) {
-        ws.sink.add(data);
+        ws.sink.add(dataStr);
       }
     }
     if (packetType == "set-cursor") {
@@ -610,7 +612,7 @@ void execPacket(String data, WebSocketChannel sender) {
       }
 
       for (var ws in webSockets) {
-        ws.sink.add(data);
+        ws.sink.add(dataStr);
       }
     }
     if (packetType == "token") {
@@ -697,7 +699,7 @@ void execPacket(String data, WebSocketChannel sender) {
         grid[cx][cy].invisible = v;
       }
       for (var ws in webSockets) {
-        ws.sink.add(data);
+        ws.sink.add(dataStr);
       }
     }
     if (packetType == "chat") {
@@ -725,7 +727,7 @@ void execPacket(String data, WebSocketChannel sender) {
           }
           if (!filterOut) {
             for (var ws in webSockets) {
-              ws.sink.add(data);
+              ws.sink.add(dataStr);
             }
           }
         } else {
@@ -784,7 +786,7 @@ void execPacket(String data, WebSocketChannel sender) {
       roles[id] = role;
 
       for (var ws in webSockets) {
-        ws.sink.add(data);
+        ws.sink.add(dataStr);
       }
     }
     if (packetType == "kick") {
