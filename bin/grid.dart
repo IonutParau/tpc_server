@@ -162,6 +162,7 @@ void loadStr(String str) {
   if (str.startsWith('P3;')) return P3.decodeString(str); // P3 importing
   if (str.startsWith('P4;')) return P4.decodeString(str); // P4 importing
   if (str.startsWith('P5;')) return P5.decodeString(str); // P5 importing
+  if (str.startsWith('P6;')) return P6.decodeString(str); // P5 importing
 }
 
 class P2 {
