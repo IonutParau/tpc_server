@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 import 'package:args/args.dart';
 import 'package:crypto/crypto.dart';
 import 'package:dart_ipify/dart_ipify.dart';
@@ -211,24 +212,28 @@ void main(List<String> arguments) async {
   if (config['silent']) {
     print('Server should be online');
   } else {
-    if (arguments.isNotEmpty) {
-      if (ip == "local" || ip == "127.0.0.1") {
-        print(
-          "You have ran this server on the localhost IP address constant (127.0.0.1 [localhost])",
-        );
-        print(
-          "This means only you can connect to the server, as the localhost IP address only allows the computer it is hosted on to access it",
-        );
-      } else if (ip == 'zero' || ip == '0.0.0.0') {
-        print("You have ran this server on IP 0.0.0.0");
-        print(
-          "This means only people connected through an ethernet wire can connect to it",
-        );
-      } else if (ip == 'self') {
-        print(
-          "WARNING: In 7 seconds it will say at what IP the server is hosted. You have no configured it to be local or zero, meaning it will display your actual IP",
-        );
-        await Future.delayed(Duration(seconds: 7));
+    if (ip == "local" || ip == "127.0.0.1") {
+      print(
+        "You have ran this server on the localhost IP address constant (127.0.0.1 [localhost])",
+      );
+      print(
+        "This means only you can connect to the server, as the localhost IP address only allows the computer it is hosted on to access it",
+      );
+    } else if (ip == 'zero' || ip == '0.0.0.0') {
+      print("You have ran this server on IP 0.0.0.0");
+      print(
+        "This means only people connected through an ethernet wire can connect to it via IP 0.0.0.0",
+      );
+      print("If you are port forwarding (done automatically on Replit) people can connect to it through this machine's IP.");
+      print("Would you like to know the IP? [y/N]");
+      if(stdin.readLineSync()!.toLowerCase().startsWith("y")) {
+        if(Random().nextDouble() < 0.01) {
+          print("Your IP is 127.0.0.1");
+          print("Wait no...");
+          await Future.delayed(Duration(seconds: 2));
+          print("Actually...");
+        }
+        print(await Ipify.ipv4());
       }
     }
     print(
